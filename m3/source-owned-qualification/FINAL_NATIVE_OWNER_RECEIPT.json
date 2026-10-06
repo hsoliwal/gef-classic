@@ -1,0 +1,161 @@
+{
+  "schema": "m3-original-native-owner-terminal-proof/v1",
+  "status": "PASS_NATIVE_WINDOWS_OWNER",
+  "owner_commit": "ef39f9d7f82c0d05c5c32b081d9a48b07579bccc",
+  "owner_tree": "d5a55a690f73ee8267cb82b4bc1f74235ca2a213",
+  "original_ci_argv": [
+    "C:\\ProgramData\\chocolatey\\lib\\maven\\apache-maven-3.9.14\\bin\\mvn.cmd",
+    "-V",
+    "-B",
+    "-fae",
+    "-ntp",
+    "-Pmaster",
+    "-Dmaven.repo.local=S:\\codex-work\\m3-nebula-20261004\\nebula-offline-mirror\\repository",
+    "clean",
+    "verify"
+  ],
+  "terminal_native_java_process": {
+    "exit_code": 0,
+    "restart": false,
+    "process_id": 61940,
+    "generic_descendant_ownership_claim": false,
+    "started_utc": "2026-10-06T01:22:41.1467047Z",
+    "status": "OBSERVED_ORIGINAL_MAVEN_PROCESS_EXIT",
+    "exit_utc": "2026-10-06T01:36:14.8152920Z"
+  },
+  "native_process_receipt_sha256": "ddb0c6ac26292958f2a04741e6d16477d048dcf5c8bcdb76c6e4d0e9cc4cf565",
+  "retired_wrapper_receipt_sha256": "71ac54c7555153ddf5d515b4d68ab20736ac60469f74f4219dce966b2f0dafdd",
+  "retired_wrapper_status": "240-second cmd observation expired while exact Maven Java child continued; not native terminal evidence",
+  "log_sha256": "8b6a7a01fab4185f03850fbb2fa5dbb328a2866d9b2913907dec3ecad2f8bce2",
+  "reactor_success": 34,
+  "default_modules": 33,
+  "reactor_including_root": 34,
+  "tests_results_blocks": [
+    {
+      "tests": 17534,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "tests": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  ],
+  "tests_total_reported": 17703,
+  "failures": 0,
+  "errors": 0,
+  "skips": 3,
+  "original_skip_evidence": [
+    {
+      "test": "org.eclipse.draw2d.test.ScrollPaneTests#testGtkWithOverlayScrolling",
+      "type": "org.opentest4j.TestAbortedException",
+      "reason": "original source assumeTrue(\"gtk\".equals(SWT.getPlatform())); executed on Windows SWT win32",
+      "source_path": "org.eclipse.draw2d.tests/src/org/eclipse/draw2d/test/ScrollPaneTests.java",
+      "source_line": 67
+    },
+    {
+      "test": "org.eclipse.draw2d.test.ScrollPaneTests#testGtkWithoutOverlayScrolling",
+      "type": "org.opentest4j.TestAbortedException",
+      "reason": "original source assumeTrue(\"gtk\".equals(SWT.getPlatform())); executed on Windows SWT win32",
+      "source_path": "org.eclipse.draw2d.tests/src/org/eclipse/draw2d/test/ScrollPaneTests.java",
+      "source_line": 88
+    },
+    {
+      "test": "org.eclipse.gef.test.swtbot.PaletteSettingsDialogTests#testOverlayScrollingPreferences",
+      "type": "org.opentest4j.TestAbortedException",
+      "reason": "original source assumeTrue(Platform.OS_LINUX.equals(Platform.getOS())); executed on Windows",
+      "source_path": "org.eclipse.gef.tests/src/org/eclipse/gef/test/swtbot/PaletteSettingsDialogTests.java",
+      "source_line": 64
+    }
+  ],
+  "source_files_verified": 2306,
+  "source_bytes_changed": [],
+  "source_mtimes_changed": [
+    "org.eclipse.draw2d/about.mappings",
+    "org.eclipse.gef/about.mappings",
+    "org.eclipse.zest.core/about.mappings"
+  ],
+  "source_mtime_effect": "Original initialize/verify about.mappings replacement/restoration; exact original raw Git bytes restored",
+  "compiler_warning_lines": 155,
+  "original_flag_target_test_jdk_contract_preserved": true,
+  "JDK_major": 25,
+  "Maven_version": "3.9.14",
+  "original_ci_Maven_version": "3.9.12",
+  "test_report_hashes": [
+    {
+      "path": "org.eclipse.draw2d.tests/target/surefire-reports/TEST-org.eclipse.draw2d.test.Draw2dTestSuite.xml",
+      "sha256": "84c21ceede9a9bd9e13a9f9af3575f06da01397b4b923d3db8f02b4327bba2f4",
+      "tests": "9369",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "2"
+    },
+    {
+      "path": "org.eclipse.draw2d.tests/target/surefire-reports/TEST-org.eclipse.draw2d.test.swtbot.SWTBotTestSuite.xml",
+      "sha256": "a7dcd1424a1eec00daf30f3e06cb8c2e61b0a26b8ae8e0dfe26053011f7f5a6f",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "org.eclipse.zest.tests/target/surefire-reports/TEST-org.eclipse.zest.tests.examples.SWTBotTestSuite.xml",
+      "sha256": "f4396eb96b95127e4af881ea67e1bd8afac563bc549ff9665a10f2c09e769637",
+      "tests": "32",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "org.eclipse.zest.tests/target/surefire-reports/TEST-org.eclipse.zest.tests.ZestTestSuite.xml",
+      "sha256": "174f635cfa6f8e45694f7e0614ab9d4432ab940157826bd5013a434726e4bd42",
+      "tests": "89",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "org.eclipse.gef.tests/target/surefire-reports/TEST-org.eclipse.gef.test.GEFTestSuite.xml",
+      "sha256": "fb7d473f62e15ab268d5c751b04c66b9fad66c6d2edac1f79e5c3c6a3c0b1f84",
+      "tests": "46",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "1"
+    }
+  ],
+  "native_SWT_UI_execution": "Original Draw2d/Zest/GEF default plus configured SWTBot suites executed on Windows x86_64 with original Tycho-selected SWT target",
+  "limits": [
+    "Target URLs and units float; this is observed resolution, not atomic immutable dependency snapshot",
+    "Other declared Linux/macOS/architectures were not executed",
+    "Two original GTK-only Draw2d tests and one Linux-only GEF test aborted by their original source assumptions",
+    "No new Synexia JNI/ABI/transpilation admission",
+    "Original source still byte-exact; bootstrap runtime recipe qualified separately in control owner"
+  ],
+  "tests_passed_reported": 17700,
+  "supersedes": {
+    "file": "FINAL_NATIVE_OWNER_RECEIPT.json",
+    "sha256": "302ce2e0a96804a8708689943d5447ef21123f2f3e360484416faa67a4ac5e0e",
+    "correction": "v1 assigned the Linux palette assumption to all skip rows; exact original sources now distinguish two GTK assumptions and one Linux assumption; totals and original terminal/custody evidence unchanged"
+  }
+}

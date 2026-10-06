@@ -1,0 +1,28 @@
+{
+  "status": "PASS_MAIN_ORIGINAL_BOOTSTRAP_AND_FULL_SOURCE",
+  "argv": [
+    "C:/ProgramData/chocolatey/lib/maven/apache-maven-3.9.14/bin/mvn.cmd",
+    "-o",
+    "-B",
+    "-ntp",
+    "-Dmaven.repo.local=S:/codex-work/m3-nebula-20261004/nebula-offline-mirror/repository",
+    "-f",
+    ".m3/openrewrite-recipes/pom.xml",
+    "clean",
+    "verify"
+  ],
+  "cwd": "S:\\gef-classic-owned-qualification-20261006\\owner",
+  "exit_code": 0,
+  "elapsed_seconds": 8.731,
+  "log_sha256": "c294cd60a7d08e2cfa36b590a651f5fc5d2402c7e545dc220b8955754027438f",
+  "source_base_commit": "ef39f9d7f82c0d05c5c32b081d9a48b07579bccc",
+  "source_base_tree": "d5a55a690f73ee8267cb82b4bc1f74235ca2a213",
+  "original_source_paths_verified": 2306,
+  "unchanged_original_context_paths": 2305,
+  "only_changed_original_source_path": ".m3/openrewrite-recipes/pom.xml",
+  "original_production_test_java_and_strict_flags_unchanged": true,
+  "expected_original_tests": 1,
+  "expected_failures_errors_skips": 0,
+  "full_native_reactor_rerun": false,
+  "full_native_original_baseline_receipt": "original-full-owner-online-build/FINAL_NATIVE_OWNER_RECEIPT.v2.json"
+}

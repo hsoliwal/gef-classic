@@ -1,0 +1,39 @@
+{
+  "status": "PASS_BOUNDED_GEF_BOOTSTRAP_SOURCE_RECIPE_REVIEW",
+  "observed_utc": "2026-10-06T01:42:20.435750+00:00",
+  "findings": [],
+  "source_owner": "S:\\gef-classic-owned-qualification-20261006\\owner",
+  "base_commit": "ef39f9d7f82c0d05c5c32b081d9a48b07579bccc",
+  "base_tree": "d5a55a690f73ee8267cb82b4bc1f74235ca2a213",
+  "reviewed_change_paths": [
+    ".m3/openrewrite-recipes/pom.xml"
+  ],
+  "exact_pom_insertion_bytes": 134,
+  "java_test_api_or_reactor_contract_changes": false,
+  "donor_inventory_sha256": "f490300714e78e988109182a00bcc56079400755cec8dc684563c9bb836406b2",
+  "official_engine_proof_receipt_sha256": "03d304982971a8e2695cc5520b76d33daacb0841faff13ddd2cf9c50ece62b9c",
+  "successor_pom_sha256": "bf7379180d69ce359e97d59b11a613ec5f7ee97ca5a35e7a24750e8e0ab81d8e",
+  "successor_guard_sha256": "79035137dab1856b2d5211402be9b7857f3780881c9d14107d8292758ad99760",
+  "successor_build_runner_sha256": "f0e95a12d46ef2a3c3ee9f45b0623bde4f61e3a9a4bcf9854e4b0039ff8bc86b",
+  "original_native_full_reactor_terminal_exit": 0,
+  "original_native_full_reactor_projects": 34,
+  "original_log_tests_reported": 17703,
+  "original_log_tests_reported_are_unique_claim": false,
+  "five_selected_report_xml_declared_tests": 9538,
+  "selected_xml_testcase_nodes": 17703,
+  "selected_xml_distinct_class_name_pairs": 17703,
+  "full_reactor_test_cardinality_reconciliation_pending": true,
+  "independent_successor_validate_exit": 0,
+  "independent_source_log_sha256": "9017bac3d856aa20018d51703a1f5b6f41e59112916b2f2bc0a8441e03f21d82",
+  "unchanged_main_owner_paths_verified": 2306,
+  "control_expected_source_paths_verified": 2306,
+  "negative_controls_reviewed": 2,
+  "canonical_changes_by_reviewer": false,
+  "permission_to_apply_within_user_scope": "Apply exact official engine postimage through saved preflight-bound recipe, then actual unchanged owning bootstrap tests and full-source postcustody. Save successor/source-only evidence, branch and append-only commit; draft PR authorized. Do not claim unique17703 tests until reconciliation; other OS and all-project/JNI admission remain open.",
+  "limits": [
+    "Original full reactor has floating dependency targets and local Maven3.9.14 vs originalCI3.9.12.",
+    "Source recipe native guards do not prove atomic concurrent replacement/handle lifetime.",
+    "No full reactor rerun is needed for this isolated .m3 runtime atom; actual owning bootstrap test/source custody required.",
+    "Full136 repositories and364 local records remain active."
+  ]
+}
