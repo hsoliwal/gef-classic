@@ -1,0 +1,21 @@
+{
+  "status": "APPLIED_REVIEWED_OFFICIAL_POSTIMAGE",
+  "owner_root": "S:\\gef-classic-owned-qualification-20261006\\owner",
+  "owner_base_commit": "ef39f9d7f82c0d05c5c32b081d9a48b07579bccc",
+  "owner_base_tree": "d5a55a690f73ee8267cb82b4bc1f74235ca2a213",
+  "target": ".m3/openrewrite-recipes/pom.xml",
+  "before_sha256": "2aaef7ad35967e1101f82b2088ec2e6c97eece5195463138a63f9b4e04596f29",
+  "after_sha256": "dfd72deecb9e4d91be79e613e5c759ab56fdb457e181e230a522749edd75478d",
+  "insertion_bytes": 134,
+  "original_source_paths": 2306,
+  "unchanged_original_context_paths": 2305,
+  "changed_original_source_paths": [
+    ".m3/openrewrite-recipes/pom.xml"
+  ],
+  "java_test_api_or_original_reactor_changes": false,
+  "official_proof_receipt_sha256": "03d304982971a8e2695cc5520b76d33daacb0841faff13ddd2cf9c50ece62b9c",
+  "independent_review_sha256": "ec7a81b546712a8059e64e15cb7fe30b0c84e56a557a216fc44cf94b4afd6d34",
+  "test_counter_reconciliation_sha256": "479ff6f31d5e53d25ff7b75ee914155ac05767e277c51c14e8544b7b4f29fc9f",
+  "owning_bootstrap_after_application": "PENDING_REAL_UNCHANGED_TEST_EXECUTION",
+  "user_authorization": "original all-project recipe-first goal; parent independent review permits exact application/branch/draft PR"
+}

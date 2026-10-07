@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion><groupId>com.synexia.recipe</groupId><artifactId>gef-owned-source-qualification</artifactId><version>0.1.0-SNAPSHOT</version><packaging>pom</packaging>
+  <properties><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><m3.python>python</m3.python><m3.gef.root>${project.basedir}/../..</m3.gef.root><m3.network>offline</m3.network></properties>
+  <build><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>3.2.0</version><executions><execution><id>sealed-recipe-inputs</id><phase>validate</phase><goals><goal>run</goal></goals><configuration><target>
+                <checksum file="${project.basedir}/.gitattributes" algorithm="SHA-256" property="seal.0"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: .gitattributes"><condition><not><equals arg1="${seal.0}" arg2="bb72984c47eb6ea5faa895af22c1214279e73125df8a91456939d3c648e1a392"/></not></condition></fail>
+                <checksum file="${project.basedir}/FINAL_NATIVE_OWNER_RECEIPT.json" algorithm="SHA-256" property="seal.1"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: FINAL_NATIVE_OWNER_RECEIPT.json"><condition><not><equals arg1="${seal.1}" arg2="a15f91f91b308513217c7aecbbd7c2b0e94d28dbc3a1c79d899c9c04928f1ed2"/></not></condition></fail>
+                <checksum file="${project.basedir}/FOSS_REUSE_DECISION.tsv" algorithm="SHA-256" property="seal.2"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: FOSS_REUSE_DECISION.tsv"><condition><not><equals arg1="${seal.2}" arg2="3039c89b16885a0ea3031d1c28bf33b6fc02143f84fd88edcdbbac3537b1bfd4"/></not></condition></fail>
+                <checksum file="${project.basedir}/MAIN_ORIGINAL_BOOTSTRAP_AFTER_RECEIPT.json" algorithm="SHA-256" property="seal.3"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: MAIN_ORIGINAL_BOOTSTRAP_AFTER_RECEIPT.json"><condition><not><equals arg1="${seal.3}" arg2="7ed5a7a22728c3c9a6ada0d161686afba14c1fa4f8561fd2aec3440d9b02c414"/></not></condition></fail>
+                <checksum file="${project.basedir}/MAIN_SOURCE_APPLICATION_RECEIPT.json" algorithm="SHA-256" property="seal.4"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: MAIN_SOURCE_APPLICATION_RECEIPT.json"><condition><not><equals arg1="${seal.4}" arg2="ecfac797326d3ae2696c6c26b044048824b024cec864f80fb7b0f584b24030fe"/></not></condition></fail>
+                <checksum file="${project.basedir}/ORIGINAL_SOURCE_SEAL.json" algorithm="SHA-256" property="seal.5"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: ORIGINAL_SOURCE_SEAL.json"><condition><not><equals arg1="${seal.5}" arg2="60cf901a8f507a1b689170fab55d3e75547196776bd72b3240c1c466826116c4"/></not></condition></fail>
+                <checksum file="${project.basedir}/ORIGINAL_TEST_REPORT_RECONCILIATION.json" algorithm="SHA-256" property="seal.6"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: ORIGINAL_TEST_REPORT_RECONCILIATION.json"><condition><not><equals arg1="${seal.6}" arg2="479ff6f31d5e53d25ff7b75ee914155ac05767e277c51c14e8544b7b4f29fc9f"/></not></condition></fail>
+                <checksum file="${project.basedir}/README.md" algorithm="SHA-256" property="seal.7"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: README.md"><condition><not><equals arg1="${seal.7}" arg2="9b9078c545d7f31f8fc29c0c25200394fbd31f1a61f9a131cb981ad4fc55ad23"/></not></condition></fail>
+                <checksum file="${project.basedir}/RECIPE_PATHS.tsv" algorithm="SHA-256" property="seal.8"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: RECIPE_PATHS.tsv"><condition><not><equals arg1="${seal.8}" arg2="46bfc3a626f29f6f516a8ea7b48636678d9848e80266a39ae27149b187456aa1"/></not></condition></fail>
+                <checksum file="${project.basedir}/SOURCE_PATHS.tsv" algorithm="SHA-256" property="seal.9"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: SOURCE_PATHS.tsv"><condition><not><equals arg1="${seal.9}" arg2="521a14e181515b9355a30036ed1125184bec074e005b768adc8b836d3c4262f0"/></not></condition></fail>
+                <checksum file="${project.basedir}/SOURCE_REVIEW.json" algorithm="SHA-256" property="seal.10"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: SOURCE_REVIEW.json"><condition><not><equals arg1="${seal.10}" arg2="ec7a81b546712a8059e64e15cb7fe30b0c84e56a557a216fc44cf94b4afd6d34"/></not></condition></fail>
+                <checksum file="${project.basedir}/SOURCE_SEAL.json" algorithm="SHA-256" property="seal.11"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: SOURCE_SEAL.json"><condition><not><equals arg1="${seal.11}" arg2="9871059eda7768d5ef27e9896ce0bf62b4d8fd1184ae9978e0e094866e81d130"/></not></condition></fail>
+                <checksum file="${project.basedir}/THIRD_PARTY_NOTICES.md" algorithm="SHA-256" property="seal.12"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: THIRD_PARTY_NOTICES.md"><condition><not><equals arg1="${seal.12}" arg2="ac77c0f947bf7584236f0e50196ba96bd62834e02878c6b4b491c1bc3fd5ea94"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/ANNOTATION_API_INVENTORY.json" algorithm="SHA-256" property="seal.13"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/ANNOTATION_API_INVENTORY.json"><condition><not><equals arg1="${seal.13}" arg2="198ac63f472084868b3ff0d7f312d66f3a7e44dfe12320f44693803227df9799"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/Apache-2.0.txt" algorithm="SHA-256" property="seal.14"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/Apache-2.0.txt"><condition><not><equals arg1="${seal.14}" arg2="cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/CONTROL_SOURCE_APPLICATION_RECEIPT.json" algorithm="SHA-256" property="seal.15"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/CONTROL_SOURCE_APPLICATION_RECEIPT.json"><condition><not><equals arg1="${seal.15}" arg2="b134eab3b5e60208881c4ce49d79aa2f5c84b26f94939e4f13f2f89a6c171935"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/DONOR_INVENTORY.json" algorithm="SHA-256" property="seal.16"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/DONOR_INVENTORY.json"><condition><not><equals arg1="${seal.16}" arg2="f490300714e78e988109182a00bcc56079400755cec8dc684563c9bb836406b2"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/FOSS_REUSE_DECISION.tsv" algorithm="SHA-256" property="seal.17"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/FOSS_REUSE_DECISION.tsv"><condition><not><equals arg1="${seal.17}" arg2="999412e92cdaea103bd21dda59343f57850549dbfd620aed4d2b2c407b3d715c"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/FindAndReplace.java" algorithm="SHA-256" property="seal.18"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/FindAndReplace.java"><condition><not><equals arg1="${seal.18}" arg2="e2c76c5c1de416dcbb3bf5337cd3b6e45aff4dca30eb55c19c80f8bddf53caea"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/OFFICIAL_RECIPE_PROOF_RECEIPT.json" algorithm="SHA-256" property="seal.19"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/OFFICIAL_RECIPE_PROOF_RECEIPT.json"><condition><not><equals arg1="${seal.19}" arg2="03d304982971a8e2695cc5520b76d33daacb0841faff13ddd2cf9c50ece62b9c"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/ORIGINAL_BOOTSTRAP_AFTER_RECEIPT.json" algorithm="SHA-256" property="seal.20"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/ORIGINAL_BOOTSTRAP_AFTER_RECEIPT.json"><condition><not><equals arg1="${seal.20}" arg2="90071f9a0bb10dedcfa0b481a198bc64b1de0495c5ed8023c586a061363facef"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/OWNED_BOOTSTRAP_GATE_RECEIPT.json" algorithm="SHA-256" property="seal.21"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/OWNED_BOOTSTRAP_GATE_RECEIPT.json"><condition><not><equals arg1="${seal.21}" arg2="b39759138583a467c1ceaca9f34b8c3718f7b8f2acd96d3228dbc241d8dc8c2d"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/OwnedBootstrapGateProof.java" algorithm="SHA-256" property="seal.22"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/OwnedBootstrapGateProof.java"><condition><not><equals arg1="${seal.22}" arg2="e884e42f015021e50146d3550ae9553b80995c201654d9bf080e7bc472c9992a"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/RECIPE_BINDING.json" algorithm="SHA-256" property="seal.23"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/RECIPE_BINDING.json"><condition><not><equals arg1="${seal.23}" arg2="3c27fa95bf83c53c547395ed4f3e4afbf52f85a3b48ffa795f8261127f6e2788"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/SLF4J-MIT-LICENSE.txt" algorithm="SHA-256" property="seal.24"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/SLF4J-MIT-LICENSE.txt"><condition><not><equals arg1="${seal.24}" arg2="4e7f90c86ab51278228bce153122f1d8df30149d13ce9ef524c8444a84c32dcc"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/THIRD_PARTY_NOTICES.md" algorithm="SHA-256" property="seal.25"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/THIRD_PARTY_NOTICES.md"><condition><not><equals arg1="${seal.25}" arg2="035e970dad9d1e3d00af2915caab3e11c2d7f479154c7dda2261b1693767f7ed"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/after.txt" algorithm="SHA-256" property="seal.26"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/after.txt"><condition><not><equals arg1="${seal.26}" arg2="dfd72deecb9e4d91be79e613e5c759ab56fdb457e181e230a522749edd75478d"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/before.txt" algorithm="SHA-256" property="seal.27"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/before.txt"><condition><not><equals arg1="${seal.27}" arg2="2aaef7ad35967e1101f82b2088ec2e6c97eece5195463138a63f9b4e04596f29"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/pom.xml" algorithm="SHA-256" property="seal.28"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/pom.xml"><condition><not><equals arg1="${seal.28}" arg2="91b75d986cd82cca31c2ac511620c16feea7d6766a9f2ee197b3c79d4575acde"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/recipe.yaml" algorithm="SHA-256" property="seal.29"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/recipe.yaml"><condition><not><equals arg1="${seal.29}" arg2="aca15ce74b1771238f57264479e3937a361e3d8ee43bbe100cb1fb8e7788c57f"/></not></condition></fail>
+                <checksum file="${project.basedir}/bootstrap-runtime/src/main/java/GefBootstrapRuntimeRecipeProof.java" algorithm="SHA-256" property="seal.30"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: bootstrap-runtime/src/main/java/GefBootstrapRuntimeRecipeProof.java"><condition><not><equals arg1="${seal.30}" arg2="a9c693da9f97725fe925822c9a49f04c206ae6ae582239a13e866230a21481f7"/></not></condition></fail>
+                <checksum file="${project.basedir}/run_owned_build.py" algorithm="SHA-256" property="seal.31"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: run_owned_build.py"><condition><not><equals arg1="${seal.31}" arg2="f0e95a12d46ef2a3c3ee9f45b0623bde4f61e3a9a4bcf9854e4b0039ff8bc86b"/></not></condition></fail>
+                <checksum file="${project.basedir}/verify_owner.py" algorithm="SHA-256" property="seal.32"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: verify_owner.py"><condition><not><equals arg1="${seal.32}" arg2="79035137dab1856b2d5211402be9b7857f3780881c9d14107d8292758ad99760"/></not></condition></fail>
+                <checksum file="${project.basedir}/windows-reparse-preflight.ps1" algorithm="SHA-256" property="seal.33"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: windows-reparse-preflight.ps1"><condition><not><equals arg1="${seal.33}" arg2="1bac0dc9b0cae4748f473da8fe6c7b3d843653c92a38e1493276559e9baa203d"/></not></condition></fail>
+                <checksum file="${project.basedir}/.gitignore" algorithm="SHA-256" property="seal.34"/>
+                <fail message="RECIPE_INPUT_DRIFT_REFUSAL: .gitignore"><condition><not><equals arg1="${seal.34}" arg2="2f906d0bac31cc862a5b48c2e951551a35301ce717adb852a15eda7c35bd1d5e"/></not></condition></fail>
+    </target></configuration></execution></executions></plugin>
+    <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.5.0</version><executions><execution><id>full-owning-source-and-native-custody</id><phase>validate</phase><goals><goal>exec</goal></goals><configuration><executable>${m3.python}</executable><arguments><argument>-B</argument><argument>${project.basedir}/verify_owner.py</argument><argument>${m3.gef.root}</argument></arguments><environmentVariables><PYTHONDONTWRITEBYTECODE>1</PYTHONDONTWRITEBYTECODE></environmentVariables></configuration></execution></executions></plugin>
+  </plugins></build>
+  <profiles><profile><id>owned-build</id><build><plugins><plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.5.0</version><executions><execution><id>original-full-owner-ci-build</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration><executable>${m3.python}</executable><arguments><argument>-B</argument><argument>${project.basedir}/run_owned_build.py</argument><argument>${m3.gef.root}</argument><argument>${m3.evidence}</argument><argument>${m3.maven}</argument><argument>${m3.cache}</argument><argument>${m3.jdk}</argument><argument>${m3.network}</argument></arguments><environmentVariables><PYTHONDONTWRITEBYTECODE>1</PYTHONDONTWRITEBYTECODE></environmentVariables></configuration></execution></executions></plugin></plugins></build></profile></profiles>
+</project>
