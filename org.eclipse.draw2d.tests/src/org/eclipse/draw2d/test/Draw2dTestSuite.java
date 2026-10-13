@@ -40,6 +40,7 @@ import org.junit.platform.suite.api.Suite;
 	AWTGraphicsClipping.class,
 	SWTGraphicsClipping.class,
 	PaintDamageEraseTest.class,
+	DeferredUpdateManagerDamageTest.class,
 	LayeredPaneTest.class,
 	ConnectionEndPointMoveTest.class,
 	ImageUtilitiesTest.class,

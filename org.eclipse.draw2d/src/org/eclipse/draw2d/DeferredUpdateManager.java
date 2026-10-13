@@ -284,7 +284,8 @@ public class DeferredUpdateManager extends UpdateManager {
 				contribution.intersect(walker.getBounds());
 				walker = walker.getParent();
 			}
-			if (damage == null) {
+			// Empty clips carry no paintable area into the aggregate.
+			if (damage == null || (damage.isEmpty() && !contribution.isEmpty())) {
 				damage = new Rectangle(contribution);
 			} else {
 				damage.union(contribution);
