@@ -169,3 +169,8 @@ The first thing you will probably want to consult is the developer documentation
 All further project information (forum, mailing list, issue tracker, update-site locations, release plans) can be retrieved from the project meta-data at [projects.eclipse.org](https://projects.eclipse.org/projects/tools.gef).
 
 If you want to contribute, please consult the [contributor guide](https://github.com/eclipse-gef/gef-classic/blob/master/CONTRIBUTING.md#contributing-to-the-eclipse-graphical-editing-framework-gef).
+
+## Source-level reference and coverage
+
+See the [source reference](docs/source-reference/README.md) for the complete pinned project/module and Java-namespace inventory, selected API lifecycle guides, examples/test links, and an explicit semantic-coverage ledger. Inventory accounting is complete for the listed manifests and checked-in Java declarations; exhaustive package/API review and build/native verification remain open.
+
