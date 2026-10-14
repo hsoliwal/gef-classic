@@ -69,6 +69,40 @@ Open the [Shapes example](../org.eclipse.gef.examples.shapes) in the configured 
 
 A useful regression exercise is to move a shape, resize it, undo, redo and compare both model bounds and displayed bounds. This describes what to verify; it is not evidence that the example was launched or the regression passed here.
 
+## Extension points: policy, command, model and view
+
+[DiagramEditPart](../org.eclipse.gef.examples.shapes/src/org/eclipse/gef/examples/shapes/parts/DiagramEditPart.java) shows where an editor accepts an operation. It installs a root component policy to prevent removing the diagram and a layout policy to handle child creation/move/resize.
+
+Its nested `ShapesXYLayoutEditPolicy` creates a `ShapeSetConstraintCommand` only for the supported child/rectangle combination. Creation accepts the example's ellipse and rectangle model types; unsupported types return no create command. A visible palette entry therefore does not prove that the target diagram accepts that object type.
+
+[ShapeEditPart](../org.eclipse.gef.examples.shapes/src/org/eclipse/gef/examples/shapes/parts/ShapeEditPart.java) adds component and graphical-node policies for deletion and connection operations. Its figure and anchor factories also distinguish ellipse and rectangle types. When extending the example with a new shape, trace all three decisions: creation admission, figure construction and connection-anchor construction. Changing only one can produce a partially working editor.
+
+### Command stack semantics that affect debugging
+
+The [CommandStack implementation](../org.eclipse.gef/src/org/eclipse/gef/commands/CommandStack.java) supplies the editing history:
+
+- `execute(command)` ignores a null command or one whose `canExecute()` is false.
+- A successfully executed command is retained for undo. Executing a new accepted command first clears the redo history.
+- `markSaveLocation()` records the history position used by dirty-state tracking; it does not itself write the model to disk.
+- `dispose()` disposes commands held by both histories. Commands retaining application resources need an appropriate lifetime policy.
+- Command-stack event listeners distinguish before/after execution, undo and redo. A post-execution event alone is not a model assertion: notification occurs in a `finally` block even if execution throws.
+
+Do not mutate the figure directly to implement an operation that must support undo. Follow the example's policy → command → model → property change → edit-part refresh path. Likewise, calling a command's `execute()` directly bypasses the command stack's history management.
+
+### Lifecycle and a concrete regression sequence
+
+Both diagram and shape edit parts register a model property-change listener on activation and remove it on deactivation. Keep those paired: a stale listener can retain an editor or deliver refreshes after its view has gone away. View refresh still belongs to the SWT UI lifecycle; this example is not a thread-safety contract for background model mutation.
+
+In a configured example editor, use this diagnostic sequence:
+
+1. Create a rectangle; confirm both the model child and its edit part/figure exist.
+2. Move it, then resize it. Record model location/size and figure layout constraints after each operation.
+3. Undo twice and redo twice, checking values at each step. Then undo once and execute a new move: the abandoned redo branch should no longer be available.
+4. Mark a save location through the editor's normal save flow; check dirty-state transitions independently of actual serialization.
+5. Close the editor and reopen it; check listener teardown and persisted model state separately from command history.
+
+For failures, stop at the first broken boundary: no command (policy/request), rejected command (admission), wrong model (command), stale drawing (listener/layout), or incorrect undo state (stack ownership). Use [GEF tests](../org.eclipse.gef.tests) for editing/history regressions and [Draw2d tests](../org.eclipse.draw2d.tests) for figure/layout behavior. This is a source-grounded test plan; no editor launch or new test pass is claimed.
+
 ## Troubleshooting and review boundaries
 
 - **Missing target bundles:** resolve the selected target and record failing repositories/units before changing dependencies. A local cached artifact can hide a clean-machine failure.
