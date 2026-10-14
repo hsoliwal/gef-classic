@@ -137,3 +137,7 @@ The first thing you will probably want to consult is the developer documentation
 All further project information (forum, mailing list, issue tracker, update-site locations, release plans) can be retrieved from the project meta-data at [projects.eclipse.org](https://projects.eclipse.org/projects/tools.gef).
 
 If you want to contribute, please consult the [contributor guide](https://github.com/eclipse-gef/gef-classic/blob/master/CONTRIBUTING.md#contributing-to-the-eclipse-graphical-editing-framework-gef).
+
+## Fork development guide
+
+For a source map, current build prerequisites, command cheat sheet and a worked Shapes example, see the [GEF Classic development guide](docs/DEVELOPMENT_GUIDE.md).
