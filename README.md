@@ -68,6 +68,38 @@ The code base of the GEF components implemented in JavaFX is located in the [ecl
 - Eclipse 2024-06 (Draw2D/Zest), Eclipse 2024-09 (GEF) or later
 - Java 17 or later
 
+## Working on this fork
+
+The requirements above describe framework consumption. For building this
+checkout, the [root POM](pom.xml) selects the `JavaSE-25` target execution
+environment and [Jenkinsfile](Jenkinsfile) selects JDK 25. Follow the
+[local contributor guide](CONTRIBUTING.md), including its
+[current target definition](target-platform/GEF_classic.target), rather than
+using an older installed release as the development target.
+
+Use the component that owns the behavior:
+
+- [Draw2D](org.eclipse.draw2d/) and [SVG support](org.eclipse.draw2d.svg/):
+  figures, painting and drawing; tests in [org.eclipse.draw2d.tests/](org.eclipse.draw2d.tests/)
+- [GEF](org.eclipse.gef/): graphical-editor framework; tests in
+  [org.eclipse.gef.tests/](org.eclipse.gef.tests/) and examples such as
+  [Logic](org.eclipse.gef.examples.logic/) and [Shapes](org.eclipse.gef.examples.shapes/)
+- [Zest core](org.eclipse.zest.core/), [layouts](org.eclipse.zest.layouts/) and
+  [Cloudio](org.eclipse.zest.cloudio/): graph visualization; tests in
+  [org.eclipse.zest.tests/](org.eclipse.zest.tests/)
+- The `*.doc.isv` projects contain component documentation;
+  [org.eclipse.gef.repository/](org.eclipse.gef.repository/) assembles the p2 site
+
+These are the SWT-based Classic components. The separate JavaFX-based GEF
+repository linked above is not this build's source tree.
+
+For fork-local changes, open a PR against
+[hsoliwal/gef-classic](https://github.com/hsoliwal/gef-classic/pulls).
+Upstream contributions use the Eclipse process in
+[CONTRIBUTING.md](CONTRIBUTING.md). The upstream update sites and example
+instructions below describe upstream artifacts; they do not demonstrate that
+fork-specific changes are included in those releases.
+
 # Update sites:
 
 Update Sites (p2 repositories) are available at:

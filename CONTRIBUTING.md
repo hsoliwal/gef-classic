@@ -39,7 +39,9 @@ Having set up the Eclipse IDE, next is to [fork the repository](https://help.git
     - Choose to import all projects and press *Finish* to conclude.
 
 ### Set Target Platform
-A target definition file is provided by the `target-platform` project. To specify the target platform, simply open the respective target definition (e.g. *2022-03.target*) within the *Target Editor*, let it fully resolve (i.e. wait until the *Resolving Target Definition* background task has finished and the installable units are listed under the respective *Locations*), then choose to *Set as Target Platform*).
+The current target definition is [target-platform/GEF_classic.target](target-platform/GEF_classic.target), also selected by the root POM's `target-platform` property. Open it in the *Target Editor*, wait for *Resolving Target Definition* to finish and the installable units to appear, then choose *Set as Target Platform*.
+
+This target currently refers to Eclipse staging and integration-build repositories as well as the license repository. Resolution needs network access; record the resolved target and source revision when reproducing a failure. A target-resolution failure is distinct from a compiler or test failure.
 
 In case the target editor does not properly resolve the target definition, an invalid target cache may be the cause. In such cases, opening the target definition file with a text editor and incrementing the sequence number manually, will invalidate the cache when reopening it with the target editor again. After the cache has been invalidated, the sequence number can be restored.
 
@@ -49,14 +51,22 @@ All production code bundles (i.e. excluding doc and test bundles) are configured
 API-baselines are provided by the `org.eclipse.gef.baseline` project. You may define them by going to *Preferences -> Plug-in Development -> API Baselines*, then choose to select "Add Baseline..." and point to the `plugins` sub-folder of an API baseline located in the baselines project (note that the dialog browses the file system instead of the workspace, so you will have to point into the respective folder in your local Git repository).
 
 ## Create and test a contribution
-Having properly set up your development environment you can start working on the necessary changes. Please ensure to execute the *all* test-suite that exists for each bundle that was changed to be safe against regressions. In case your change is not trivial, it is recommended to add respective tests to demonstrate that the fix is adequate. You can either call the *AllTests* suite contained in the test bundles of all GEF components, or run a headless Maven build locally (which will also execute the tests).
+Having properly set up your development environment you can start working on the necessary changes. Please ensure to execute the *all* test-suite that exists for each bundle that was changed to be safe against regressions. In case your change is not trivial, it is recommended to add respective tests to demonstrate that the fix is adequate. The checked-in test POMs identify the suites: [Draw2D](org.eclipse.draw2d.tests/pom.xml) runs `Draw2dTestSuite` and `SWTBotTestSuite`, [GEF](org.eclipse.gef.tests/pom.xml) runs `GEFTestSuite`, and [Zest](org.eclipse.zest.tests/pom.xml) runs `ZestTestSuite` and `SWTBotTestSuite`. Run the applicable suites or the Maven verification build below; a non-UI suite alone does not cover the SWTBot lane.
 
 ## Run a headless build
 GEF uses a Maven/Tycho-based build infrastructure. With the [Eclipse Maven Integration](http://eclipse.org/m2e/), a headless build can also be executed in the local workspace. Make sure you have checked out all projects of the respective git repository. Then easily run the build by right-clicking the `pom.xml` file located in the root directory of the GEF classic repository, and selecting 'Run As -> Maven build...'.
 
-In the configuration wizard you have to specify the goals ("clean verify"). The build needs to be executed with a Java 17 VM, so if you have installed multiple JVMs, you should check the settings in the *JRE* tab.
+In the configuration wizard you have to specify the goals ("clean verify"). For this checkout, use JDK 25: [pom.xml](pom.xml) selects `JavaSE-25` and [Jenkinsfile](Jenkinsfile) selects `temurin-jdk25-latest`. If multiple JDKs are installed, check the *JRE* tab and the JDK used by Maven. The build's Tycho version is set in [.mvn/maven.config](.mvn/maven.config).
 
-As a result of the build, an update-site will be created in the `target` sub-folder of the `org.eclipse.gef.repository` project.
+The equivalent command from the repository root is:
+
+```sh
+mvn clean verify
+```
+
+A command-line build still needs SWT's native runtime and a graphical display for UI tests. Jenkins uses Xvnc. The test POMs supply `-XstartOnFirstThread` on macOS; preserve those platform settings when making a custom launch configuration.
+
+After a successful build, the update site is under `org.eclipse.gef.repository/target`. Inspect `**/target/surefire-reports/*.xml` for test results and `**/target/ecj/*.xml` for compiler diagnostics, matching the report paths collected by Jenkins. Include the exact command, JDK, OS/display setup and failed, skipped or unrun suites in the PR. Signing and promotion profiles are release-infrastructure operations, not prerequisites for the local verification command.
 
 ## Deliver a Contribution
 Before any contribution can be accepted by the project, you need to electronically sign the [Eclipse Contributor Agreement (ECA)](https://www.eclipse.org/legal/ECA.php). Further, your changes should be comprised to a single commit (squash if necessary) and the commit needs to be properly [signed off](https://wiki.eclipse.org/Development_Resources/Contributing_via_Git#Signing_off_on_a_commit) to mark its CLA-compliance.
