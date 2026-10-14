@@ -25,7 +25,7 @@ Other important owners:
 
 The checked-in [Maven workflow](../.github/workflows/maven.yml) uses **Temurin 25 and Maven 3.9.12**. The [root POM](../pom.xml) selects `JavaSE-25`, and [.mvn/maven.config](../.mvn/maven.config) sets Tycho 5.0.4. Use those checked-in inputs to reproduce this fork's current verification lane.
 
-The existing contribution guide's Java 17 headless-build text describes an older configuration. Do not interpret it as the current fork's build-JDK selection. Build JDK, target platform and an individual bundle's declared execution environment are different settings; inspect the bundle manifest when evaluating application compatibility.
+Use the checked-in workflow and root POM above for the build-JDK selection at the revision you are testing. Build JDK, target platform and an individual bundle's declared execution environment are different settings; inspect the bundle manifest when evaluating application compatibility.
 
 You also need Git, network access to resolve Maven/p2 dependencies, and a usable SWT display environment for UI tests. Linux CI wraps the build with Xvfb. The contribution guide describes Eclipse/PDE setup, setting the target platform and defining the API baseline.
 
