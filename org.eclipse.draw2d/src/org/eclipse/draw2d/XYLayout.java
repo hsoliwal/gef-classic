@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (child index)
  *******************************************************************************/
 package org.eclipse.draw2d;
 
@@ -86,6 +87,10 @@ public class XYLayout extends AbstractConstraintLayout {
 	 */
 	@Override
 	public void layout(IFigure parent) {
+		org.eclipse.draw2d.internal.m3.M3FigureChildren m3 = parent instanceof Figure f ? f.m3ChildIndex() : null;
+		if (m3 != null && m3.layout().layout(this)) {
+			return;
+		}
 		Point offset = getOrigin(parent);
 		for (IFigure f : parent.getChildren()) {
 			Rectangle bounds = (Rectangle) getConstraint(f);
