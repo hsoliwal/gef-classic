@@ -1,0 +1,12 @@
+viewport	100000	build+validate	1029333600	100000	0
+viewport	100000	paint-viewport	587200	3226	0
+viewport	100000	paint-damage-50x50	21300	42	0
+viewport	100000	scroll+paint	868200	3474	0
+viewport	100000	zoom0.25+paint	234900	3230	0
+viewport	100000	findFigureAt	1261	1024	0
+viewport	100000	findMouseEventTargetAt	2608	40	0
+viewport	100000	move-node+update	5569300	0	0
+viewport	100000	move-2-far-nodes+update	6309200	3227	0
+viewport	100000	freeform-extent-after-move	7300	1	465480
+viewport	100000	add-node+update	6177200	100018	465480
+viewport	100000	remove-middle-node+update	6447200	100000	465480
