@@ -54,11 +54,17 @@ public final class M3Draw2dScript {
 		}
 	}
 
-	/** A figure whose class overrides validate and logs each call. */
+	/** A figure whose class overrides validate, logs each call and now and then invalidates a partner. */
 	final class ValidatingFigure extends Figure {
+		IFigure partner;
+		int calls;
+
 		@Override
 		public void validate() {
 			log("validate " + id(this)); //$NON-NLS-1$
+			if (partner != null && ++calls % 3 == 0) {
+				partner.invalidate();
+			}
 			super.validate();
 		}
 	}
@@ -77,6 +83,9 @@ public final class M3Draw2dScript {
 	private final boolean mutateInPlace;
 	private final M3DiagramFixture d;
 	private final Layer second = new Layer();
+	private final Layer third = new Layer();
+	private final FreeformLayer inner = new FreeformLayer();
+	private boolean cascading;
 	private final List<IFigure> nodes = new ArrayList<>();
 	private int nextId;
 
@@ -86,6 +95,13 @@ public final class M3Draw2dScript {
 		this.d = new M3DiagramFixture(0, 900, 600, seed);
 		second.setLayoutManager(new XYLayout());
 		d.pane.add(second, "second"); //$NON-NLS-1$
+		third.setLayoutManager(new XYLayout() {
+			// a subclass: the index leaves its layout to the stock loop
+		});
+		d.pane.add(third, "third"); //$NON-NLS-1$
+		inner.setLayoutManager(new FreeformLayout());
+		d.layer.add(inner, new Rectangle(5, 5, 50, 50));
+		ids.put(inner, Integer.valueOf(-10));
 		for (int i = 0; i < count; i++) {
 			addNode(-1);
 		}
@@ -133,15 +149,19 @@ public final class M3Draw2dScript {
 		case 1 -> new Ellipse();
 		case 2 -> new RoundedRectangle();
 		case 3 -> new OverridingFigure();
-		case 4 -> new ValidatingFigure();
+		case 4 -> {
+			ValidatingFigure v = new ValidatingFigure();
+			v.partner = anyNode();
+			yield v;
+		}
 		case 5 -> new InsetHitFigure();
 		case 6 -> {
 			Figure box = new Figure();
 			box.setLayoutManager(new XYLayout());
 			for (int k = 0; k < 3; k++) {
-				RectangleFigure inner = new RectangleFigure();
-				ids.put(inner, Integer.valueOf(nextId++));
-				box.add(inner, new Rectangle(2 + 6 * k, 2, 5, 5));
+				RectangleFigure cell = new RectangleFigure();
+				ids.put(cell, Integer.valueOf(nextId++));
+				box.add(cell, new Rectangle(2 + 6 * k, 2, 5, 5));
 			}
 			yield box;
 		}
@@ -162,6 +182,10 @@ public final class M3Draw2dScript {
 		}
 		if (random.nextInt(7) == 0) {
 			f.addFigureListener(src -> log("moved " + id(src) + ' ' + src.getBounds())); //$NON-NLS-1$
+		}
+		IFigure partner = anyNode();
+		if (partner != null && random.nextInt(25) == 0) {
+			f.addFigureListener(src -> cascade(partner));
 		}
 		return f;
 	}
@@ -184,14 +208,35 @@ public final class M3Draw2dScript {
 	}
 
 	private IFigure parentFor() {
-		return random.nextInt(4) == 0 ? second : d.layer;
+		return switch (random.nextInt(10)) {
+		case 0, 1 -> second;
+		case 2 -> third;
+		case 3 -> inner;
+		default -> d.layer;
+		};
+	}
+
+	/** A figure listener that moves another figure (once, not recursively): changes during layout. */
+	private void cascade(IFigure partner) {
+		if (!cascading && partner.getParent() != null) {
+			cascading = true;
+			try {
+				partner.setBounds(partner.getBounds().getTranslated(1, 1));
+			} finally {
+				cascading = false;
+			}
+		}
 	}
 
 	private void addNode(int index) {
 		IFigure f = create();
 		IFigure parent = parentFor();
 		int at = index < 0 || index > parent.getChildren().size() ? -1 : index;
-		parent.add(f, constraint(), at);
+		if (random.nextInt(20) == 0) {
+			parent.add(f, at);
+		} else {
+			parent.add(f, constraint(), at);
+		}
 		nodes.add(f);
 	}
 
@@ -207,7 +252,7 @@ public final class M3Draw2dScript {
 
 	private void step() {
 		IFigure f = anyNode();
-		int op = random.nextInt(18);
+		int op = random.nextInt(19);
 		if (f == null && op < 8) {
 			op = 0;
 		}
@@ -246,7 +291,17 @@ public final class M3Draw2dScript {
 		case 11 -> paint();
 		case 12, 13 -> hits();
 		case 14 -> log("extent " + d.layer.getFreeformExtent() + ' ' + d.pane.getFreeformExtent()); //$NON-NLS-1$
+		case 18 -> burst();
 		default -> flush();
+		}
+	}
+
+	/** Inserts a run of new nodes at the front of the primary layer (z-order labels run out of gaps). */
+	private void burst() {
+		for (int k = 0; k < 14; k++) {
+			IFigure f = create();
+			d.layer.add(f, constraint(), 1);
+			nodes.add(f);
 		}
 	}
 
