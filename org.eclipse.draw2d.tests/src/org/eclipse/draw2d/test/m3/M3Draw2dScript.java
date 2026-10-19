@@ -86,6 +86,7 @@ public final class M3Draw2dScript {
 	private final Layer third = new Layer();
 	private final FreeformLayer inner = new FreeformLayer();
 	private boolean cascading;
+	private int cascades;
 	private final List<IFigure> nodes = new ArrayList<>();
 	private int nextId;
 
@@ -216,9 +217,15 @@ public final class M3Draw2dScript {
 		};
 	}
 
-	/** A figure listener that moves another figure (once, not recursively): changes during layout. */
+	/**
+	 * A figure listener that moves another figure (not recursively, and at most
+	 * 48 times per script: unbounded cascades livelock stock Draw2d, since every
+	 * layout pass moves a partner, which revalidates the layer again): changes
+	 * during layout.
+	 */
 	private void cascade(IFigure partner) {
-		if (!cascading && partner.getParent() != null) {
+		if (!cascading && cascades < 48 && partner.getParent() != null) {
+			cascades++;
 			cascading = true;
 			try {
 				partner.setBounds(partner.getBounds().getTranslated(1, 1));
