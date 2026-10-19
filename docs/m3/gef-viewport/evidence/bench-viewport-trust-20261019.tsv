@@ -1,0 +1,12 @@
+trust	100000	build+validate	1217448900	100000	0
+trust	100000	paint-viewport	545000	3226	0
+trust	100000	paint-damage-50x50	13000	42	0
+trust	100000	scroll+paint	1186500	3474	0
+trust	100000	zoom0.25+paint	278300	3230	0
+trust	100000	findFigureAt	2251	1024	0
+trust	100000	findMouseEventTargetAt	1529	40	0
+trust	100000	move-node+update	48300	0	0
+trust	100000	move-2-far-nodes+update	242900	3227	0
+trust	100000	freeform-extent-after-move	4700	1	465480
+trust	100000	add-node+update	51000	100018	465480
+trust	100000	remove-middle-node+update	512000	100000	465480

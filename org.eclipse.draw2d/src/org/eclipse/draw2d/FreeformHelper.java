@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (child index)
  *******************************************************************************/
 package org.eclipse.draw2d;
 
@@ -34,6 +35,10 @@ class FreeformHelper implements FreeformListener {
 
 	public Rectangle getFreeformExtent() {
 		if (freeformExtent != null) {
+			return freeformExtent;
+		}
+		if (host instanceof Figure f && f.m3ChildIndex() != null) {
+			freeformExtent = f.m3ChildIndex().freeform().extent(host);
 			return freeformExtent;
 		}
 		Rectangle r;
@@ -89,6 +94,10 @@ class FreeformHelper implements FreeformListener {
 		host.setBounds(bounds);
 		bounds = bounds.getCopy();
 		host.translateFromParent(bounds);
+		if (host instanceof Figure f && f.m3ChildIndex() != null) {
+			f.m3ChildIndex().freeform().setFreeformBounds(bounds);
+			return;
+		}
 		for (IFigure child : host.getChildren()) {
 			if (child instanceof FreeformFigure freeFormFig) {
 				freeFormFig.setFreeformBounds(bounds);

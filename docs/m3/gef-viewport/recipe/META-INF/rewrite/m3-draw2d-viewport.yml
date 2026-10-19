@@ -1,0 +1,140 @@
+# Copyright (c) 2026 Synexia, Hitesh Soliwal (hsoliwal@gmail.com) and others.
+# SPDX-License-Identifier: Apache-2.0 OR EPL-2.0
+#
+# Draw2d viewport mode hooks (docs/m3/gef-viewport/DESIGN.md). Each hook is one delegation into
+# org.eclipse.draw2d.internal.m3; the logic lives there. With -Ddraw2d.viewport.mode other than
+# "viewport" no index is ever created and every hook reduces to a null test.
+# Apply with M3PerFileApply (second pass must print UNCHANGED): docs/m3/gef-viewport/tools/apply_recipe.sh
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.synexia.openrewrite.viewport.Draw2dViewport
+displayName: Draw2d containers keep a child index in the viewport mode
+description: >-
+  Catalogue VIEWPORT_WINDOWING for Draw2d. Figure keeps an optional child index (spatial grid over the
+  children's bounds, z-order labels, validity bits, XY layout snapshots, freeform extent tree) and asks it to
+  paint, hit test, validate and lay out only the children for which stock Draw2d would do something observable.
+recipeList:
+  - com.synexia.openrewrite.viewport.Draw2dViewportFigure
+  - com.synexia.openrewrite.viewport.Draw2dViewportLayer
+  - com.synexia.openrewrite.viewport.Draw2dViewportLayouts
+  - com.synexia.openrewrite.viewport.Draw2dViewportFreeform
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.synexia.openrewrite.viewport.Draw2dViewportFigure
+displayName: Figure child index hooks
+description: The index field, its lazy accessor, and the delegations of Figure.
+recipeList:
+  - com.synexia.openrewrite.viewport.M3AddMemberIfMissing:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      memberName: m3Children
+      beforeMethod: add
+      memberSource: "\t/*\n\t * Synexia: child index of the viewport mode (-Ddraw2d.viewport.mode=viewport), created\n\t * by m3ChildIndex(); null otherwise.\n\t */\n\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3Children;"
+  - com.synexia.openrewrite.viewport.M3AddMemberIfMissing:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      memberName: m3ChildIndex
+      beforeMethod: add
+      memberSource: "\t/**\n\t * Returns the child index of the viewport mode, creating it once this figure\n\t * has enough children; null in the original mode, for fewer children, or when\n\t * the class overrides getChildren.\n\t */\n\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3ChildIndex() {\n\t\tif (m3Children == null && org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t&& children.size() >= org.eclipse.draw2d.internal.m3.M3ViewportMode.MIN_CHILDREN\n\t\t\t\t&& (org.eclipse.draw2d.internal.m3.M3FigureTrust.of(this)\n\t\t\t\t\t\t& org.eclipse.draw2d.internal.m3.M3FigureTrust.CONTAINER) != 0) {\n\t\t\tm3Children = new org.eclipse.draw2d.internal.m3.M3FigureChildren(this, children);\n\t\t}\n\t\treturn m3Children;\n\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: add
+      parameterCount: 3
+      anchor: "figure.setParent(this);"
+      position: AFTER
+      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.added(figure, index);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: remove
+      parameterCount: 1
+      anchor: "children.remove(figure);"
+      position: AFTER
+      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.removed(figure);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: fireFigureMoved
+      parameterCount: 0
+      position: METHOD_START
+      statements: "\t\tif (parent instanceof Figure p && p.m3Children != null) {\n\t\t\tp.m3Children.moved(this);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: setValid
+      parameterCount: 1
+      position: METHOD_END
+      statements: "\t\tif (parent instanceof Figure p && p.m3Children != null) {\n\t\t\tp.m3Children.validity(this, value);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: validate
+      parameterCount: 0
+      anchor: "children.forEach(IFigure::validate);"
+      position: BEFORE
+      statements: "\t\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();\n\t\tif (m3 != null) {\n\t\t\tm3.validation().validateChildren();\n\t\t\treturn;\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: paintChildren
+      parameterCount: 1
+      position: METHOD_START
+      statements: "\t\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();\n\t\tif (m3 != null && m3.paintChildren(graphics, clippingStrategy)) {\n\t\t\treturn;\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: findDescendantAtExcluding
+      parameterCount: 3
+      anchor: "for (IFigure fig : getChildrenRevIterable())"
+      position: BEFORE
+      statements: "\t\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();\n\t\tif (m3 != null) {\n\t\t\treturn m3.findFigureAt(x, y, search);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: findMouseEventTargetInDescendantsAt
+      parameterCount: 2
+      anchor: "for (IFigure fig : getChildrenRevIterable())"
+      position: BEFORE
+      statements: "\t\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();\n\t\tif (m3 != null) {\n\t\t\treturn m3.findMouseEventTargetAt(x, y);\n\t\t}"
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.synexia.openrewrite.viewport.Draw2dViewportLayer
+displayName: Layer transparency hit test hook
+description: Layer.containsPoint asks the index which child contains the point.
+recipeList:
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Layer]
+      methodName: containsPoint
+      parameterCount: 2
+      anchor: "y = pt.y;"
+      position: AFTER
+      statements: "\t\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();\n\t\tif (m3 != null) {\n\t\t\treturn m3.containsPoint(x, y);\n\t\t}"
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.synexia.openrewrite.viewport.Draw2dViewportLayouts
+displayName: XY layout hooks
+description: XYLayout lays out only the changed children; constraint changes mark the child.
+recipeList:
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.XYLayout]
+      methodName: layout
+      parameterCount: 1
+      position: METHOD_START
+      statements: "\t\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3 = parent instanceof Figure f ? f.m3ChildIndex() : null;\n\t\tif (m3 != null && m3.layout().layout(this)) {\n\t\t\treturn;\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.AbstractConstraintLayout]
+      methodName: setConstraint
+      parameterCount: 2
+      position: METHOD_END
+      statements: "\t\tif (figure.getParent() instanceof Figure f && f.m3Children != null) {\n\t\t\tf.m3Children.layout().constraintChanged(figure);\n\t\t}"
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.synexia.openrewrite.viewport.Draw2dViewportFreeform
+displayName: Freeform extent hooks
+description: FreeformHelper answers the extent from the extent tree and visits only FreeformFigure children.
+recipeList:
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.FreeformHelper]
+      methodName: getFreeformExtent
+      parameterCount: 0
+      anchor: "Rectangle r;"
+      position: BEFORE
+      statements: "\t\tif (host instanceof Figure f && f.m3ChildIndex() != null) {\n\t\t\tfreeformExtent = f.m3ChildIndex().freeform().extent(host);\n\t\t\treturn freeformExtent;\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.FreeformHelper]
+      methodName: setFreeformBounds
+      parameterCount: 1
+      anchor: "for (IFigure child : host.getChildren())"
+      position: BEFORE
+      statements: "\t\tif (host instanceof Figure f && f.m3ChildIndex() != null) {\n\t\t\tf.m3ChildIndex().freeform().setFreeformBounds(bounds);\n\t\t\treturn;\n\t\t}"

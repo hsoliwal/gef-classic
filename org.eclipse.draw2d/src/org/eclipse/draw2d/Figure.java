@@ -10,6 +10,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *     Mike Marchand - fix for bug #472848
+ *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (child index)
  *******************************************************************************/
 package org.eclipse.draw2d;
 
@@ -145,6 +146,27 @@ public class Figure implements IFigure {
 
 	private AncestorHelper ancestorHelper;
 
+	/*
+	 * Synexia: child index of the viewport mode (-Ddraw2d.viewport.mode=viewport), created
+	 * by m3ChildIndex(); null otherwise.
+	 */
+	org.eclipse.draw2d.internal.m3.M3FigureChildren m3Children;
+
+	/**
+	 * Returns the child index of the viewport mode, creating it once this figure
+	 * has enough children; null in the original mode, for fewer children, or when
+	 * the class overrides getChildren.
+	 */
+	org.eclipse.draw2d.internal.m3.M3FigureChildren m3ChildIndex() {
+		if (m3Children == null && org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED
+				&& children.size() >= org.eclipse.draw2d.internal.m3.M3ViewportMode.MIN_CHILDREN
+				&& (org.eclipse.draw2d.internal.m3.M3FigureTrust.of(this)
+						& org.eclipse.draw2d.internal.m3.M3FigureTrust.CONTAINER) != 0) {
+			m3Children = new org.eclipse.draw2d.internal.m3.M3FigureChildren(this, children);
+		}
+		return m3Children;
+	}
+
 	/**
 	 * Calls {@link #add(IFigure, Object, int)} with -1 as the index.
 	 *
@@ -185,6 +207,9 @@ public class Figure implements IFigure {
 			children.add(index, figure);
 		}
 		figure.setParent(this);
+		if (m3Children != null) {
+			m3Children.added(figure, index);
+		}
 
 		if (layoutManager != null) {
 			layoutManager.setConstraint(figure, constraint);
@@ -405,6 +430,10 @@ public class Figure implements IFigure {
 
 		x = PRIVATE_POINT.x;
 		y = PRIVATE_POINT.y;
+		org.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();
+		if (m3 != null) {
+			return m3.findFigureAt(x, y, search);
+		}
 
 		for (IFigure fig : getChildrenRevIterable()) {
 			if (fig.isVisible()) {
@@ -508,6 +537,10 @@ public class Figure implements IFigure {
 		if (!getClientArea(Rectangle.SINGLETON).contains(x, y)) {
 			return null;
 		}
+		org.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();
+		if (m3 != null) {
+			return m3.findMouseEventTargetAt(x, y);
+		}
 
 		for (IFigure fig : getChildrenRevIterable()) {
 			if (fig.isVisible() && fig.isEnabled() && fig.containsPoint(x, y)) {
@@ -541,6 +574,9 @@ public class Figure implements IFigure {
 	 * @since 3.1
 	 */
 	protected void fireFigureMoved() {
+		if (parent instanceof Figure p && p.m3Children != null) {
+			p.m3Children.moved(this);
+		}
 		if (!eventListeners.containsListener(FigureListener.class)) {
 			return;
 		}
@@ -1306,6 +1342,10 @@ public class Figure implements IFigure {
 	 * @since 2.0
 	 */
 	protected void paintChildren(Graphics graphics) {
+		org.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();
+		if (m3 != null && m3.paintChildren(graphics, clippingStrategy)) {
+			return;
+		}
 		for (IFigure child : children) {
 			if (child.isVisible()) {
 				// determine clipping areas for child
@@ -1433,6 +1473,9 @@ public class Figure implements IFigure {
 		figure.erase();
 		figure.setParent(null);
 		children.remove(figure);
+		if (m3Children != null) {
+			m3Children.removed(figure);
+		}
 		revalidate();
 	}
 
@@ -2020,6 +2063,9 @@ public class Figure implements IFigure {
 	 */
 	public void setValid(boolean value) {
 		setFlag(FLAG_VALID, value);
+		if (parent instanceof Figure p && p.m3Children != null) {
+			p.m3Children.validity(this, value);
+		}
 	}
 
 	/**
@@ -2189,6 +2235,11 @@ public class Figure implements IFigure {
 		}
 		setValid(true);
 		layout();
+		org.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();
+		if (m3 != null) {
+			m3.validation().validateChildren();
+			return;
+		}
 		children.forEach(IFigure::validate);
 	}
 
