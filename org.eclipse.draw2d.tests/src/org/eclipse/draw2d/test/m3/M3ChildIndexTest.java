@@ -140,7 +140,7 @@ public class M3ChildIndexTest {
 
 	@Test
 	public void trustBitsFollowOverrides() {
-		int all = M3FigureTrust.ALL | M3FigureTrust.CONTAINER | M3FigureTrust.INVALIDATION;
+		int all = M3FigureTrust.ALL | M3FigureTrust.CONTAINER | M3FigureTrust.INVALIDATION | M3FigureTrust.SIZE_FREE;
 		assertEquals(all, M3FigureTrust.of(new Figure()));
 		assertEquals(0, M3FigureTrust.of(new BoundsOverride()) & M3FigureTrust.BOUNDS);
 		assertEquals(0, M3FigureTrust.of(new VisibleOverride()) & M3FigureTrust.PAINT);
@@ -240,7 +240,8 @@ public class M3ChildIndexTest {
 		assertEquals(0, M3FigureTrust.of(new PrimTranslateOverride()) & M3FigureTrust.BOUNDS);
 		assertEquals(0, M3FigureTrust.of(new FireMovedOverride()) & M3FigureTrust.BOUNDS);
 		int flag = M3FigureTrust.of(new FlagOverride());
-		assertEquals(M3FigureTrust.BOUNDS | M3FigureTrust.CONTAINS | M3FigureTrust.CONTAINER | M3FigureTrust.INVALIDATION, flag);
+		assertEquals(M3FigureTrust.BOUNDS | M3FigureTrust.CONTAINS | M3FigureTrust.CONTAINER | M3FigureTrust.INVALIDATION
+				| M3FigureTrust.SIZE_FREE, flag);
 		assertEquals(0, M3FigureTrust.of(new SetValidOverride()) & M3FigureTrust.VALIDATE);
 		assertEquals(0, M3FigureTrust.of(new ValidateOverride()) & M3FigureTrust.VALIDATE);
 		assertEquals(0, M3FigureTrust.of(new RevIterableOverride()) & M3FigureTrust.CONTAINER);

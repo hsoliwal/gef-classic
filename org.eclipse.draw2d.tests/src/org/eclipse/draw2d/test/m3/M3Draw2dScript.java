@@ -82,6 +82,7 @@ public final class M3Draw2dScript {
 	private final SplittableRandom random;
 	private final boolean mutateInPlace;
 	private final boolean deltaOnly;
+	private final boolean frames;
 	/** {@code M3DeltaGate.summary()} after the last run (M3 build only, else "-"). */
 	public static String gateSummary = "-"; //$NON-NLS-1$
 	/** {@code M3DeltaGate.fullWork()} after the last run (M3 build only, else 0). */
@@ -99,11 +100,15 @@ public final class M3Draw2dScript {
 	private final List<IFigure> nodes = new ArrayList<>();
 	private int nextId;
 
-	private M3Draw2dScript(long seed, int count, boolean mutateInPlace, boolean deltaOnly) {
+	private M3Draw2dScript(long seed, int count, boolean mutateInPlace, boolean deltaOnly, boolean frames) {
 		this.random = new SplittableRandom(seed);
 		this.mutateInPlace = mutateInPlace;
 		this.deltaOnly = deltaOnly;
+		this.frames = frames;
 		this.d = new M3DiagramFixture(0, 900, 600, seed);
+		if (frames) {
+			d.trackFrame();
+		}
 		second.setLayoutManager(new XYLayout());
 		d.pane.add(second, "second"); //$NON-NLS-1$
 		third.setLayoutManager(new XYLayout() {
@@ -145,7 +150,18 @@ public final class M3Draw2dScript {
 	 * {@link #wholeRepaints}) must stay at zero from the first flush on.
 	 */
 	public static String run(long seed, int count, int steps, boolean mutateInPlace, boolean deltaOnly) {
-		M3Draw2dScript s = new M3Draw2dScript(seed, count, mutateInPlace, deltaOnly);
+		return run(seed, count, steps, mutateInPlace, deltaOnly, false);
+	}
+
+	/**
+	 * Same; with {@code frames} every flush logs the hash of the canvas raster the
+	 * repairs painted into and whether it differs from a fresh paint of the whole
+	 * canvas (stale pixels), instead of the repair's operations: the comparison
+	 * for builds that damage and repair differently but must show the same frame.
+	 */
+	public static String run(long seed, int count, int steps, boolean mutateInPlace, boolean deltaOnly,
+			boolean frames) {
+		M3Draw2dScript s = new M3Draw2dScript(seed, count, mutateInPlace, deltaOnly, frames);
 		gate("reset"); //$NON-NLS-1$
 		s.d.manager.wholeRepaints = 0;
 		for (int i = 0; i < steps; i++) {
@@ -335,6 +351,11 @@ public final class M3Draw2dScript {
 
 	private void flush() {
 		d.manager.flush();
+		if (frames) {
+			String stale = d.frame.firstDifference(d.freshFrame());
+			log("flush frame " + Long.toHexString(d.frame.hash()) + (stale == null ? "" : " stale " + stale)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			return;
+		}
 		M3RecordingGraphics g = d.manager.last;
 		log("flush " + (g == null ? "none" : g.operations() + " " + Long.toHexString(g.hash()))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
@@ -345,9 +366,9 @@ public final class M3Draw2dScript {
 		if (f == null && op < 8) {
 			op = 0;
 		}
-		if (deltaOnly && (op == 3 || op == 9 || op == 10 || op == 15)) {
-			// in-place constraint changes revalidate the container directly; scroll and zoom are viewport
-			// deltas; emptying a container and refilling it is a clear-and-re-add
+		if (deltaOnly && (op == 3 || op == 9 || op == 10 || op == 15 || op == 17)) {
+			// in-place constraint changes revalidate the container directly; scroll, zoom and resize are
+			// viewport deltas; emptying a container and refilling it is a clear-and-re-add
 			op = op == 3 ? 2 : 16;
 		}
 		switch (op) {
@@ -390,6 +411,7 @@ public final class M3Draw2dScript {
 		case 12, 13 -> hits();
 		case 14 -> log("extent " + d.layer.getFreeformExtent() + ' ' + d.pane.getFreeformExtent()); //$NON-NLS-1$
 		case 15 -> refill(new IFigure[] { second, third, inner }[random.nextInt(3)]);
+		case 17 -> d.resize(600 + random.nextInt(500), 400 + random.nextInt(400));
 		case 18 -> burst();
 		default -> flush();
 		}

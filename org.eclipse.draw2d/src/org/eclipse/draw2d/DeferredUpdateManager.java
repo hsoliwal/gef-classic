@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
- *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (hidden viewports)
+ *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (hidden viewports, dirty pieces)
  *******************************************************************************/
 package org.eclipse.draw2d;
 
@@ -81,6 +81,12 @@ public class DeferredUpdateManager extends UpdateManager {
 		setGraphicsSource(gs);
 	}
 
+	/*
+	 * Synexia: the dirty regions as separate pieces in the viewport mode (M3DirtyPieces), created by the first
+	 * addDirtyRegion; null otherwise.
+	 */
+	private org.eclipse.draw2d.internal.m3.M3DirtyPieces m3Pieces;
+
 	/**
 	 * Adds a dirty region (defined by the rectangle <i>x, y, w, h</i>) to the
 	 * update queue. If the figure isn't visible or either the width or height are
@@ -104,6 +110,12 @@ public class DeferredUpdateManager extends UpdateManager {
 			dirtyRegions.put(figure, rect);
 		} else {
 			rect.union(x, y, w, h);
+		}
+		if (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED && org.eclipse.draw2d.internal.m3.M3Damage.STRIPS) {
+			if (m3Pieces == null) {
+				m3Pieces = new org.eclipse.draw2d.internal.m3.M3DirtyPieces();
+			}
+			m3Pieces.add(figure, x, y, w, h);
 		}
 
 		queueWork();
@@ -161,6 +173,9 @@ public class DeferredUpdateManager extends UpdateManager {
 					&& org.eclipse.draw2d.internal.m3.M3Visibility.painted(this)
 					&& new Rectangle(gc.getClipping()).contains(root.getBounds())) {
 				dirtyRegions.clear();
+				if (m3Pieces != null) {
+					m3Pieces.drop();
+				}
 			}
 		} else {
 			/*
@@ -287,8 +302,14 @@ public class DeferredUpdateManager extends UpdateManager {
 		if (m3 != org.eclipse.draw2d.internal.m3.M3Visibility.PAINT) {
 			if (m3 == org.eclipse.draw2d.internal.m3.M3Visibility.DROP) {
 				dirtyRegions.clear();
+				if (m3Pieces != null) {
+					m3Pieces.drop();
+				}
 			}
 			return;
+		}
+		if (m3Pieces != null) {
+			m3Pieces.begin();
 		}
 		// Any regions marked dirty while calculating
 		// the damage are processed in the next cycle
@@ -314,6 +335,16 @@ public class DeferredUpdateManager extends UpdateManager {
 
 		if (!oldRegions.isEmpty()) {
 			firePainting(damage, oldRegions);
+		}
+		if (m3Pieces != null && m3Pieces.repair(damage, piece -> {
+			Graphics graphics = getGraphics(piece);
+			if (graphics != null) {
+				root.paint(graphics);
+				releaseGraphics(graphics);
+			}
+		})) {
+			damage = null;
+			return;
 		}
 
 		if (damage != null && !damage.isEmpty()) {

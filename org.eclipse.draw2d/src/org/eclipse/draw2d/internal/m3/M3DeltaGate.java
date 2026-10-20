@@ -48,6 +48,10 @@ public final class M3DeltaGate {
 	public static long paintedChildren;
 	/** Children validated through an index (per-step validation work). */
 	public static long validatedChildren;
+	/** Bounds changes of size-free figures damaged as strips instead of the whole old and new bounds. */
+	public static int stripChanges;
+	/** Repairs painted as separate pieces instead of their bounding rectangle. */
+	public static int pieceRepairs;
 	/** Update requests deferred because the canvas was hidden. */
 	public static int deferredUpdates;
 	/** Repairs skipped because the canvas was hidden (explicit performUpdate). */
@@ -70,6 +74,8 @@ public final class M3DeltaGate {
 		indexBuilds = 0;
 		paintedChildren = 0;
 		validatedChildren = 0;
+		stripChanges = 0;
+		pieceRepairs = 0;
 		deferredUpdates = 0;
 		deferredRepairs = 0;
 		droppedRepairs = 0;

@@ -70,6 +70,8 @@ public class M3RecordingGraphics extends GraphicsStub {
 	private final StringBuilder log;
 	private long hash = 0xcbf29ce484222325L;
 	private int ops;
+	private M3FrameRaster raster;
+	private long lastOp;
 
 	/**
 	 * @param clip the device clip, in device coordinates
@@ -81,6 +83,108 @@ public class M3RecordingGraphics extends GraphicsStub {
 		state.cw = clip.width;
 		state.ch = clip.height;
 		log = keepLog ? new StringBuilder() : null;
+	}
+
+	/**
+	 * Same, stamping every drawing operation into {@code raster} (see
+	 * {@link M3FrameRaster}); the clip region of the raster is cleared first, as a
+	 * repair paints its region from scratch.
+	 */
+	public M3RecordingGraphics(Rectangle clip, boolean keepLog, M3FrameRaster raster) {
+		this(clip, keepLog);
+		this.raster = raster;
+		if (raster != null) {
+			raster.clear(clip.x, clip.y, clip.width, clip.height);
+		}
+	}
+
+	/**
+	 * Model pixel value of the operation just recorded: its own arguments and the
+	 * colours and line width, not its place in the order; never 0 or
+	 * {@link M3FrameRaster#EXPOSED}.
+	 */
+	private int pixel() {
+		long h = lastOp ^ (state.fg == null ? 7 : state.fg.hashCode()) * 31L ^ (state.bg == null ? 11 : state.bg.hashCode())
+				^ Float.floatToIntBits(state.lineWidth);
+		int v = (int) (h ^ (h >>> 32)) | 1;
+		return v == M3FrameRaster.EXPOSED ? v + 2 : v;
+	}
+
+	/** Stamps the device rectangle, cut by the current clip. */
+	private void stamp(int x, int y, int w, int h) {
+		if (raster != null) {
+			stampValue(x, y, w, h, pixel());
+		}
+	}
+
+	private void stampValue(int x, int y, int w, int h, int value) {
+		int cx = state.cx + state.tx;
+		int cy = state.cy + state.ty;
+		int x1 = Math.max(x, cx);
+		int y1 = Math.max(y, cy);
+		long x2 = Math.min((long) x + w, (long) cx + state.cw);
+		long y2 = Math.min((long) y + h, (long) cy + state.ch);
+		if (x2 > x1 && y2 > y1) {
+			raster.fill(x1, y1, (int) (x2 - x1), (int) (y2 - y1), value);
+		}
+	}
+
+	/** Stamps a line of the current width between two device points, cut to the clip first (Liang-Barsky). */
+	private void stampLine(int x1, int y1, int x2, int y2) {
+		if (raster == null) {
+			return;
+		}
+		int lw = Math.max(1, (int) Math.ceil(state.lineWidth));
+		double minX = (double) state.cx + state.tx - lw;
+		double minY = (double) state.cy + state.ty - lw;
+		double maxX = minX + state.cw + 2.0 * lw;
+		double maxY = minY + state.ch + 2.0 * lw;
+		double dx = (double) x2 - x1;
+		double dy = (double) y2 - y1;
+		double[] p = { -dx, dx, -dy, dy };
+		double[] q = { x1 - minX, maxX - x1, y1 - minY, maxY - y1 };
+		double t0 = 0;
+		double t1 = 1;
+		for (int i = 0; i < 4; i++) {
+			if (p[i] == 0) {
+				if (q[i] < 0) {
+					return;
+				}
+			} else {
+				double t = q[i] / p[i];
+				if (p[i] < 0) {
+					t0 = Math.max(t0, t);
+				} else {
+					t1 = Math.min(t1, t);
+				}
+			}
+		}
+		if (t0 > t1) {
+			return;
+		}
+		// the points follow the whole segment's parameter, so a clipped repaint stamps the same pixels
+		long steps = (long) Math.max(Math.abs(dx), Math.abs(dy));
+		long from = (long) Math.floor(t0 * steps);
+		long to = (long) Math.ceil(t1 * steps);
+		int value = pixel();
+		for (long i = from; i <= to; i++) {
+			long x = steps == 0 ? x1 : x1 + Math.round(dx * i / steps);
+			long y = steps == 0 ? y1 : y1 + Math.round(dy * i / steps);
+			stampValue((int) x - lw / 2, (int) y - lw / 2, lw, lw, value);
+		}
+	}
+
+	/** Stamps the segments of a polyline, closed for a polygon. */
+	private void stampSegments(PointList points, boolean closed) {
+		int n = points.size();
+		for (int i = 0; i + 1 < n; i++) {
+			stampLine(points.getPoint(i).x + state.tx, points.getPoint(i).y + state.ty, points.getPoint(i + 1).x + state.tx,
+					points.getPoint(i + 1).y + state.ty);
+		}
+		if (closed && n > 2) {
+			stampLine(points.getPoint(n - 1).x + state.tx, points.getPoint(n - 1).y + state.ty,
+					points.getPoint(0).x + state.tx, points.getPoint(0).y + state.ty);
+		}
 	}
 
 	/** Order-sensitive hash of every recorded operation. */
@@ -100,6 +204,12 @@ public class M3RecordingGraphics extends GraphicsStub {
 
 	private void record(int code, int a, int b, int c, int d) {
 		ops++;
+		long op = 0xcbf29ce484222325L;
+		op = (op ^ code) * 0x100000001b3L;
+		op = (op ^ a) * 0x100000001b3L;
+		op = (op ^ b) * 0x100000001b3L;
+		op = (op ^ c) * 0x100000001b3L;
+		lastOp = (op ^ d) * 0x100000001b3L;
 		long h = hash;
 		h = (h ^ code) * 0x100000001b3L;
 		h = (h ^ a) * 0x100000001b3L;
@@ -115,6 +225,17 @@ public class M3RecordingGraphics extends GraphicsStub {
 
 	private void draw(int code, int x, int y, int w, int h) {
 		record(code, x + state.tx, y + state.ty, w, h);
+		int dx = x + state.tx;
+		int dy = y + state.ty;
+		int lw = Math.max(1, (int) Math.ceil(state.lineWidth));
+		switch (code) {
+		case 10, 12, 18 -> stamp(dx, dy, w, h);
+		case 11, 13, 19 -> stamp(dx - lw, dy - lw, w + 2 * lw + 1, h + 2 * lw + 1);
+		case 20, 21 -> stamp(dx, dy, 1, 1);
+		default -> {
+			// polylines and polygons stamp their segments
+		}
+		}
 	}
 
 	@Override
@@ -200,24 +321,28 @@ public class M3RecordingGraphics extends GraphicsStub {
 	@Override
 	public void drawLine(int x1, int y1, int x2, int y2) {
 		record(14, x1 + state.tx, y1 + state.ty, x2 + state.tx, y2 + state.ty);
+		stampLine(x1 + state.tx, y1 + state.ty, x2 + state.tx, y2 + state.ty);
 	}
 
 	@Override
 	public void drawPolyline(PointList points) {
 		Rectangle b = points.getBounds();
 		draw(15, b.x, b.y, b.width, points.size());
+		stampSegments(points, false);
 	}
 
 	@Override
 	public void drawPolygon(PointList points) {
 		Rectangle b = points.getBounds();
 		draw(16, b.x, b.y, b.width, points.size());
+		stampSegments(points, true);
 	}
 
 	@Override
 	public void fillPolygon(PointList points) {
 		Rectangle b = points.getBounds();
 		draw(17, b.x, b.y, b.width, points.size());
+		stamp(b.x + state.tx, b.y + state.ty, b.width + 1, b.height + 1);
 	}
 
 	@Override

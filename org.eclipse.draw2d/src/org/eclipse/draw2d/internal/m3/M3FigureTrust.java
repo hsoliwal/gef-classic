@@ -15,6 +15,7 @@
 package org.eclipse.draw2d.internal.m3;
 
 import org.eclipse.draw2d.Figure;
+import org.eclipse.draw2d.Graphics;
 import org.eclipse.draw2d.IFigure;
 import org.eclipse.draw2d.TreeSearch;
 import org.eclipse.draw2d.geometry.Rectangle;
@@ -46,6 +47,30 @@ public final class M3FigureTrust {
 
 	/** A container whose child list the index may mirror. */
 	public static final int CONTAINER = 1 << 6;
+
+	/**
+	 * Painting does not depend on the figure's size: neither the class nor a
+	 * superclass below Figure declares paint, paintFigure, paintBorder,
+	 * paintClientArea or paintChildren, except the reviewed size-free ones
+	 * ({@link #SIZE_FREE_PAINTERS}). A resize then leaves the shared area's pixels valid.
+	 */
+	public static final int SIZE_FREE = 1 << 8;
+
+	/** primTranslate keeps the children where they are (freeform containers): a move does not move the content. */
+	public static final int KEEPS_CHILDREN = 1 << 9;
+
+	/**
+	 * Classes whose paint overrides were reviewed as size-free: Viewport and the
+	 * scalable panes translate and scale by their view location and scale only,
+	 * ConnectionLayer sets the antialias.
+	 */
+	static final java.util.Set<String> SIZE_FREE_PAINTERS = java.util.Set.of("org.eclipse.draw2d.Viewport", //$NON-NLS-1$
+			"org.eclipse.draw2d.ScalableLayeredPane", "org.eclipse.draw2d.ScalableFreeformLayeredPane", //$NON-NLS-1$ //$NON-NLS-2$
+			"org.eclipse.draw2d.ConnectionLayer"); //$NON-NLS-1$
+
+	/** Classes whose primTranslate moves only their own bounds. */
+	static final java.util.Set<String> CHILD_KEEPERS = java.util.Set.of("org.eclipse.draw2d.FreeformLayer", //$NON-NLS-1$
+			"org.eclipse.draw2d.FreeformLayeredPane"); //$NON-NLS-1$
 
 	/**
 	 * A container whose invalidations run Figure.revalidate and Figure.invalidate
@@ -97,7 +122,47 @@ public final class M3FigureTrust {
 		if (!declares(type, "invalidate") && !declares(type, "revalidate")) { //$NON-NLS-1$ //$NON-NLS-2$
 			bits |= INVALIDATION;
 		}
+		if (paintsSizeFree(type)) {
+			bits |= SIZE_FREE;
+		}
+		Class<?> translator = declarer(type, "primTranslate", int.class, int.class); //$NON-NLS-1$
+		if (translator != null && CHILD_KEEPERS.contains(translator.getName())) {
+			bits |= KEEPS_CHILDREN;
+		}
 		return bits;
+	}
+
+	private static final String[] PAINT_METHODS = { "paint", "paintFigure", "paintBorder", "paintClientArea", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			"paintChildren" }; //$NON-NLS-1$
+
+	static boolean paintsSizeFree(Class<?> type) {
+		for (Class<?> c = type; c != Figure.class; c = c.getSuperclass()) {
+			for (String name : PAINT_METHODS) {
+				if (declaresHere(c, name, Graphics.class) && !SIZE_FREE_PAINTERS.contains(c.getName())) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	/** The class nearest to {@code type}, below Figure, that declares the method, or null. */
+	static Class<?> declarer(Class<?> type, String name, Class<?>... parameters) {
+		for (Class<?> c = type; c != Figure.class; c = c.getSuperclass()) {
+			if (declaresHere(c, name, parameters)) {
+				return c;
+			}
+		}
+		return null;
+	}
+
+	private static boolean declaresHere(Class<?> c, String name, Class<?>... parameters) {
+		try {
+			c.getDeclaredMethod(name, parameters);
+			return true;
+		} catch (NoSuchMethodException e) {
+			return false;
+		}
 	}
 
 	/** Whether {@code type} or a superclass below Figure declares the method. */

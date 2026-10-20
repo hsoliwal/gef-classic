@@ -1740,6 +1740,24 @@ public class Figure implements IFigure {
 	 */
 	@Override
 	public void setBounds(Rectangle rect) {
+		if (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED && org.eclipse.draw2d.internal.m3.M3Damage.STRIPS
+				&& org.eclipse.draw2d.internal.m3.M3Damage.bounds(this, bounds, rect)) {
+			// the strips are damaged: the stock tail without erase and repaint
+			boolean m3Resize = rect.width != bounds.width || rect.height != bounds.height;
+			if (rect.x != bounds.x || rect.y != bounds.y) {
+				primTranslate(rect.x - bounds.x, rect.y - bounds.y);
+			}
+			bounds.width = rect.width;
+			bounds.height = rect.height;
+			if (m3Resize) {
+				if (m3Children != null) {
+					m3Children.explain();
+				}
+				invalidate();
+			}
+			fireFigureMoved();
+			return;
+		}
 		int x = bounds.x, y = bounds.y;
 
 		boolean resize = (rect.width != bounds.width) || (rect.height != bounds.height);

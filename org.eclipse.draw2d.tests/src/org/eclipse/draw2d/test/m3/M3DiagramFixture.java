@@ -58,6 +58,8 @@ public class M3DiagramFixture {
 		 * figures a delta touched.
 		 */
 		public int wholeRepaints;
+		/** Pixels repaired (sum of the repair regions). */
+		public long repairedArea;
 
 		@Override
 		public synchronized void addDirtyRegion(IFigure figure, int x, int y, int w, int h) {
@@ -131,8 +133,9 @@ public class M3DiagramFixture {
 				if (manager.nullGraphics != null) {
 					return manager.nullGraphics.reset(region);
 				}
-				manager.last = new M3RecordingGraphics(region, false);
+				manager.last = new M3RecordingGraphics(region, false, frame);
 				manager.repairs++;
+				manager.repairedArea += (long) region.width * region.height;
 				return manager.last;
 			}
 
@@ -174,6 +177,34 @@ public class M3DiagramFixture {
 	/** Height of the whole diagram. */
 	public int diagramHeight() {
 		return ((layer.getChildren().size() + columns - 1) / columns) * PITCH_Y + 30;
+	}
+
+	/** The canvas raster the repairs paint into (frame proofs), or null. */
+	public M3FrameRaster frame;
+
+	/** Starts frame proofs: a raster of the root's size, painted once by a repair of the whole root. */
+	public void trackFrame() {
+		Rectangle b = root.getBounds();
+		frame = new M3FrameRaster(b.width, b.height);
+		root.repaint();
+		manager.flush();
+	}
+
+	/** Resizes the canvas: the root's bounds, a revalidate, and the raster (which keeps its pixels). */
+	public void resize(int w, int h) {
+		root.setBounds(new Rectangle(0, 0, w, h));
+		root.revalidate();
+		if (frame != null) {
+			frame.resize(w, h);
+		}
+	}
+
+	/** A fresh paint of the whole root into a new raster: what the canvas must show. */
+	public M3FrameRaster freshFrame() {
+		Rectangle b = root.getBounds();
+		M3FrameRaster fresh = new M3FrameRaster(b.width, b.height);
+		root.paint(new M3RecordingGraphics(new Rectangle(0, 0, b.width, b.height), false, fresh));
+		return fresh;
 	}
 
 	/** Paints the viewport area {@code clip} (viewport coordinates) and returns the record. */

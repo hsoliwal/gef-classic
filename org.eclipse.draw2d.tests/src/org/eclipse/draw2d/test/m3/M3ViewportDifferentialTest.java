@@ -56,7 +56,7 @@ public class M3ViewportDifferentialTest {
 	/** Same, with the verify switch chosen. */
 	static ClassLoader loader(String build, String mode, boolean trust, boolean verify) throws Exception {
 		// trust: the documented alias -Ddraw2d.viewport.trustConstraints=true
-		return loader(build, mode, trust ? null : "attributed", verify, null, trust); //$NON-NLS-1$
+		return loader(build, mode, trust ? null : "attributed", verify, null, trust, null); //$NON-NLS-1$
 	}
 
 	/**
@@ -65,18 +65,22 @@ public class M3ViewportDifferentialTest {
 	 */
 	static ClassLoader loader(String build, String mode, String constraints, boolean verify, String minChildren)
 			throws Exception {
-		return loader(build, mode, constraints, verify, minChildren, false);
+		return loader(build, mode, constraints, verify, minChildren, false, null);
 	}
 
-	/** Same; {@code trustAlias} sets -Ddraw2d.viewport.trustConstraints=true ({@code constraints} null: unset). */
+	/**
+	 * Same; {@code trustAlias} sets -Ddraw2d.viewport.trustConstraints=true
+	 * ({@code constraints} null: unset); {@code damage} sets draw2d.viewport.damage
+	 * (null: unset, the default strips).
+	 */
 	static ClassLoader loader(String build, String mode, String constraints, boolean verify, String minChildren,
-			boolean trustAlias) throws Exception {
+			boolean trustAlias, String damage) throws Exception {
 		URLClassLoader swt = new URLClassLoader(new URL[] { url("m3.swt.jar") }, //$NON-NLS-1$
 				ClassLoader.getPlatformClassLoader());
 		URLClassLoader loader = new URLClassLoader(new URL[] { url(build), url("m3.draw2d.tests") }, swt); //$NON-NLS-1$
 		synchronized (M3ViewportDifferentialTest.class) {
 			String[] keys = { "draw2d.viewport.mode", "draw2d.viewport.verify", "draw2d.viewport.trustConstraints", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					"draw2d.viewport.constraints", "draw2d.viewport.minChildren" }; //$NON-NLS-1$ //$NON-NLS-2$
+					"draw2d.viewport.constraints", "draw2d.viewport.minChildren", "draw2d.viewport.damage" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			String[] saved = new String[keys.length];
 			for (int i = 0; i < keys.length; i++) {
 				saved[i] = System.getProperty(keys[i]);
@@ -84,6 +88,11 @@ public class M3ViewportDifferentialTest {
 			System.setProperty("draw2d.viewport.mode", mode); //$NON-NLS-1$
 			System.setProperty("draw2d.viewport.verify", Boolean.toString(verify)); //$NON-NLS-1$
 			System.setProperty("draw2d.viewport.trustConstraints", Boolean.toString(trustAlias)); //$NON-NLS-1$
+			if (damage == null) {
+				System.clearProperty("draw2d.viewport.damage"); //$NON-NLS-1$
+			} else {
+				System.setProperty("draw2d.viewport.damage", damage); //$NON-NLS-1$
+			}
 			if (constraints == null) {
 				System.clearProperty("draw2d.viewport.constraints"); //$NON-NLS-1$
 			} else {
@@ -112,9 +121,21 @@ public class M3ViewportDifferentialTest {
 	}
 
 	static String run(ClassLoader loader, long seed, int count, boolean mutate) throws Exception {
+		return run(loader, seed, count, mutate, false, true);
+	}
+
+	/**
+	 * Runs the script; {@code frames}: flushes log the canvas raster (stale pixels
+	 * included) instead of the repair operations, since the viewport mode damages
+	 * strips and repairs separate pieces where stock repaints one rectangle.
+	 */
+	static String run(ClassLoader loader, long seed, int count, boolean mutate, boolean deltaOnly, boolean frames)
+			throws Exception {
 		Class<?> script = Class.forName("org.eclipse.draw2d.test.m3.M3Draw2dScript", true, loader); //$NON-NLS-1$
-		return (String) script.getMethod("run", long.class, int.class, int.class, boolean.class).invoke(null, //$NON-NLS-1$
-				Long.valueOf(seed), Integer.valueOf(count), Integer.valueOf(STEPS), Boolean.valueOf(mutate));
+		return (String) script
+				.getMethod("run", long.class, int.class, int.class, boolean.class, boolean.class, boolean.class) //$NON-NLS-1$
+				.invoke(null, Long.valueOf(seed), Integer.valueOf(count), Integer.valueOf(STEPS), Boolean.valueOf(mutate),
+						Boolean.valueOf(deltaOnly), Boolean.valueOf(frames));
 	}
 
 	static void compare(String variant, String expected, String actual, long seed) {
@@ -145,7 +166,9 @@ public class M3ViewportDifferentialTest {
 		ClassLoader m3 = loader("m3.draw2d.m3", mode, trust, verify); //$NON-NLS-1$
 		for (long seed = 1; seed <= SEEDS; seed++) {
 			int count = 70 + (int) (seed * 37 % 500);
-			compare(variant, run(stock, seed, count, mutate), run(m3, seed, count, mutate), seed);
+			boolean frames = !"original".equals(mode); //$NON-NLS-1$
+			compare(variant, run(stock, seed, count, mutate, false, frames), run(m3, seed, count, mutate, false, frames),
+					seed);
 		}
 	}
 
@@ -209,10 +232,7 @@ public class M3ViewportDifferentialTest {
 	}
 
 	static String runDelta(ClassLoader loader, long seed, int count) throws Exception {
-		Class<?> script = Class.forName("org.eclipse.draw2d.test.m3.M3Draw2dScript", true, loader); //$NON-NLS-1$
-		return (String) script.getMethod("run", long.class, int.class, int.class, boolean.class, boolean.class) //$NON-NLS-1$
-				.invoke(null, Long.valueOf(seed), Integer.valueOf(count), Integer.valueOf(STEPS), Boolean.FALSE,
-						Boolean.TRUE);
+		return run(loader, seed, count, false, true, true);
 	}
 
 	/**
@@ -251,5 +271,20 @@ public class M3ViewportDifferentialTest {
 		runDelta(m3, 3, 200);
 		assertTrue(((Integer) gateField(m3, "gateSweeps")).intValue() > 0, //$NON-NLS-1$
 				(String) gateField(m3, "gateSummary")); //$NON-NLS-1$
+	}
+
+	/**
+	 * With {@code -Ddraw2d.viewport.damage=stock} the viewport mode damages and
+	 * repairs exactly as stock: the repair operations themselves are identical.
+	 */
+	@Test
+	public void viewportModeWithStockDamageRepairsLikeStock() throws Exception {
+		ClassLoader stock = loader("m3.draw2d.stock", "original", false); //$NON-NLS-1$ //$NON-NLS-2$
+		ClassLoader m3 = loader("m3.draw2d.m3", "viewport", "attributed", true, null, false, "stock"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		for (long seed = 1; seed <= SEEDS; seed++) {
+			int count = 70 + (int) (seed * 37 % 500);
+			compare("viewport, stock damage", run(stock, seed, count, true, false, false), //$NON-NLS-1$
+					run(m3, seed, count, true, false, false), seed);
+		}
 	}
 }

@@ -19,6 +19,7 @@ recipeList:
   - com.synexia.openrewrite.viewport.Draw2dViewportLayouts
   - com.synexia.openrewrite.viewport.Draw2dViewportFreeform
   - com.synexia.openrewrite.viewport.Draw2dViewportHidden
+  - com.synexia.openrewrite.viewport.Draw2dViewportDamage
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: com.synexia.openrewrite.viewport.Draw2dViewportFigure
@@ -206,14 +207,14 @@ recipeList:
       methodName: repairDamage
       parameterCount: 0
       position: METHOD_START
-      statements: "\t\tint m3 = org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t? org.eclipse.draw2d.internal.m3.M3Visibility.repair(this)\n\t\t\t\t: org.eclipse.draw2d.internal.m3.M3Visibility.PAINT;\n\t\tif (m3 != org.eclipse.draw2d.internal.m3.M3Visibility.PAINT) {\n\t\t\tif (m3 == org.eclipse.draw2d.internal.m3.M3Visibility.DROP) {\n\t\t\t\tdirtyRegions.clear();\n\t\t\t}\n\t\t\treturn;\n\t\t}"
+      statements: "\t\tint m3 = org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t? org.eclipse.draw2d.internal.m3.M3Visibility.repair(this)\n\t\t\t\t: org.eclipse.draw2d.internal.m3.M3Visibility.PAINT;\n\t\tif (m3 != org.eclipse.draw2d.internal.m3.M3Visibility.PAINT) {\n\t\t\tif (m3 == org.eclipse.draw2d.internal.m3.M3Visibility.DROP) {\n\t\t\t\tdirtyRegions.clear();\n\t\t\t\tif (m3Pieces != null) {\n\t\t\t\t\tm3Pieces.drop();\n\t\t\t\t}\n\t\t\t}\n\t\t\treturn;\n\t\t}"
   - com.synexia.openrewrite.viewport.M3InsertStatements:
       declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager]
       methodName: paint
       parameterCount: 1
       anchor: "graphics.dispose();"
       position: AFTER
-      statements: "\t\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t\t&& org.eclipse.draw2d.internal.m3.M3Visibility.painted(this)\n\t\t\t\t\t&& new Rectangle(gc.getClipping()).contains(root.getBounds())) {\n\t\t\t\tdirtyRegions.clear();\n\t\t\t}"
+      statements: "\t\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t\t&& org.eclipse.draw2d.internal.m3.M3Visibility.painted(this)\n\t\t\t\t\t&& new Rectangle(gc.getClipping()).contains(root.getBounds())) {\n\t\t\t\tdirtyRegions.clear();\n\t\t\t\tif (m3Pieces != null) {\n\t\t\t\t\tm3Pieces.drop();\n\t\t\t\t}\n\t\t\t}"
   - com.synexia.openrewrite.viewport.M3InsertStatements:
       declaringClasses: [org.eclipse.draw2d.LightweightSystem]
       methodName: setControl
@@ -226,3 +227,44 @@ recipeList:
       parameterCount: 1
       position: METHOD_END
       statements: "\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED && canvas != null) {\n\t\t\torg.eclipse.draw2d.internal.m3.M3Visibility.register(manager, canvas);\n\t\t}"
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.synexia.openrewrite.viewport.Draw2dViewportDamage
+displayName: Viewport deltas damage strips and repair pieces
+description: >-
+  Brief rule 24 (viewport deltas): a bounds change of a size-free figure damages only the uncovered and exposed
+  strips (M3Damage), and the update manager repairs separate dirty pieces instead of their bounding rectangle when
+  that paints clearly less (M3DirtyPieces). -Ddraw2d.viewport.damage=stock keeps the stock damage.
+recipeList:
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: setBounds
+      parameterCount: 1
+      position: METHOD_START
+      statements: "\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED && org.eclipse.draw2d.internal.m3.M3Damage.STRIPS\n\t\t\t\t&& org.eclipse.draw2d.internal.m3.M3Damage.bounds(this, bounds, rect)) {\n\t\t\t// the strips are damaged: the stock tail without erase and repaint\n\t\t\tboolean m3Resize = rect.width != bounds.width || rect.height != bounds.height;\n\t\t\tif (rect.x != bounds.x || rect.y != bounds.y) {\n\t\t\t\tprimTranslate(rect.x - bounds.x, rect.y - bounds.y);\n\t\t\t}\n\t\t\tbounds.width = rect.width;\n\t\t\tbounds.height = rect.height;\n\t\t\tif (m3Resize) {\n\t\t\t\tif (m3Children != null) {\n\t\t\t\t\tm3Children.explain();\n\t\t\t\t}\n\t\t\t\tinvalidate();\n\t\t\t}\n\t\t\tfireFigureMoved();\n\t\t\treturn;\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3AddMemberIfMissing:
+      declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager]
+      memberName: m3Pieces
+      beforeMethod: addDirtyRegion
+      memberSource: "\t/*\n\t * Synexia: the dirty regions as separate pieces in the viewport mode (M3DirtyPieces), created by the first\n\t * addDirtyRegion; null otherwise.\n\t */\n\tprivate org.eclipse.draw2d.internal.m3.M3DirtyPieces m3Pieces;"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager]
+      methodName: addDirtyRegion
+      parameterCount: 5
+      anchor: "queueWork();"
+      position: BEFORE
+      statements: "\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED && org.eclipse.draw2d.internal.m3.M3Damage.STRIPS) {\n\t\t\tif (m3Pieces == null) {\n\t\t\t\tm3Pieces = new org.eclipse.draw2d.internal.m3.M3DirtyPieces();\n\t\t\t}\n\t\t\tm3Pieces.add(figure, x, y, w, h);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager]
+      methodName: repairDamage
+      parameterCount: 0
+      anchor: "Map<IFigure, Rectangle> oldRegions = dirtyRegions;"
+      position: BEFORE
+      statements: "\t\tif (m3Pieces != null) {\n\t\t\tm3Pieces.begin();\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager]
+      methodName: repairDamage
+      parameterCount: 0
+      anchor: "if (damage != null && !damage.isEmpty())"
+      position: BEFORE
+      statements: "\t\tif (m3Pieces != null && m3Pieces.repair(damage, piece -> {\n\t\t\tGraphics graphics = getGraphics(piece);\n\t\t\tif (graphics != null) {\n\t\t\t\troot.paint(graphics);\n\t\t\t\treleaseGraphics(graphics);\n\t\t\t}\n\t\t})) {\n\t\t\tdamage = null;\n\t\t\treturn;\n\t\t}"
