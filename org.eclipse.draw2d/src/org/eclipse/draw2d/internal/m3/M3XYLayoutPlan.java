@@ -54,8 +54,8 @@ public final class M3XYLayoutPlan {
 	private final M3IntList prefList = new M3IntList();
 	private final M3IntList special = new M3IntList();
 	private final M3IntList check = new M3IntList();
-	private int[] seen = new int[16];
-	private int epoch;
+	private long[] seen = new long[16];
+	private long epoch;
 	private int laidOut;
 	private int applying = -1;
 
@@ -185,10 +185,7 @@ public final class M3XYLayoutPlan {
 	 */
 	private void collectChanged(long cursor) {
 		visit.clear();
-		if (++epoch == 0) {
-			Arrays.fill(seen, 0);
-			epoch = 1;
-		}
+		epoch++;
 		long[] labels = index.slots.labels();
 		int kept = 0;
 		for (int i = 0; i < dirtyList.size(); i++) {
