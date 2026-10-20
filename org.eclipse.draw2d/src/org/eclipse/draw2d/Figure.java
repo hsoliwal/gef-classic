@@ -214,6 +214,9 @@ public class Figure implements IFigure {
 		if (layoutManager != null) {
 			layoutManager.setConstraint(figure, constraint);
 		}
+		if (m3Children != null) {
+			m3Children.explain();
+		}
 
 		revalidate();
 
@@ -1157,6 +1160,9 @@ public class Figure implements IFigure {
 	 */
 	@Override
 	public void invalidate() {
+		if (m3Children != null) {
+			m3Children.invalidated(layoutManager instanceof LayoutNotifier);
+		}
 		if (layoutManager != null) {
 			layoutManager.invalidate();
 		}
@@ -1476,6 +1482,9 @@ public class Figure implements IFigure {
 		if (m3Children != null) {
 			m3Children.removed(figure);
 		}
+		if (m3Children != null) {
+			m3Children.explain();
+		}
 		revalidate();
 	}
 
@@ -1672,6 +1681,9 @@ public class Figure implements IFigure {
 		if (getParent() == null || isValidationRoot()) {
 			getUpdateManager().addInvalidFigure(this);
 		} else {
+			if (getParent() instanceof Figure p && p.m3Children != null) {
+				p.m3Children.explain();
+			}
 			getParent().revalidate();
 		}
 	}
@@ -1747,6 +1759,9 @@ public class Figure implements IFigure {
 
 		if (translate || resize) {
 			if (resize) {
+				if (m3Children != null) {
+					m3Children.explain();
+				}
 				invalidate();
 			}
 			fireFigureMoved();
@@ -1808,6 +1823,9 @@ public class Figure implements IFigure {
 
 		if (layoutManager != null) {
 			layoutManager.setConstraint(child, constraint);
+		}
+		if (m3Children != null) {
+			m3Children.explain();
 		}
 		revalidate();
 	}

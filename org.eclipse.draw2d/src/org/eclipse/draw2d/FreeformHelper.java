@@ -77,6 +77,9 @@ class FreeformHelper implements FreeformListener {
 		freeformExtent = null;
 		host.fireExtentChanged();
 		if (host.getParent() != null) {
+			if (host.getParent() instanceof Figure p && p.m3Children != null) {
+				p.m3Children.explain();
+			}
 			host.getParent().revalidate();
 		} else {
 			host.revalidate();

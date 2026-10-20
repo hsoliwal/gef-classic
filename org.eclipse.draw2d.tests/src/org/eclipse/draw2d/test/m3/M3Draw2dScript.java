@@ -81,6 +81,15 @@ public final class M3Draw2dScript {
 	private final Map<IFigure, Integer> ids = new IdentityHashMap<>();
 	private final SplittableRandom random;
 	private final boolean mutateInPlace;
+	private final boolean deltaOnly;
+	/** {@code M3DeltaGate.summary()} after the last run (M3 build only, else "-"). */
+	static String gateSummary = "-"; //$NON-NLS-1$
+	/** {@code M3DeltaGate.fullWork()} after the last run (M3 build only, else 0). */
+	static int gateFullWork;
+	/** Constraint sweeps after the last run (M3 build only, else 0). */
+	static int gateSweeps;
+	/** Whole-container dirty regions of the last run, counted from the reset on. */
+	static int wholeRepaints;
 	private final M3DiagramFixture d;
 	private final Layer second = new Layer();
 	private final Layer third = new Layer();
@@ -90,9 +99,10 @@ public final class M3Draw2dScript {
 	private final List<IFigure> nodes = new ArrayList<>();
 	private int nextId;
 
-	private M3Draw2dScript(long seed, int count, boolean mutateInPlace) {
+	private M3Draw2dScript(long seed, int count, boolean mutateInPlace, boolean deltaOnly) {
 		this.random = new SplittableRandom(seed);
 		this.mutateInPlace = mutateInPlace;
+		this.deltaOnly = deltaOnly;
 		this.d = new M3DiagramFixture(0, 900, 600, seed);
 		second.setLayoutManager(new XYLayout());
 		d.pane.add(second, "second"); //$NON-NLS-1$
@@ -104,6 +114,9 @@ public final class M3Draw2dScript {
 		// no XY constraint: FreeformHelper.setFreeformBounds alone sizes a nested freeform layer
 		d.layer.add(inner);
 		ids.put(inner, Integer.valueOf(-10));
+		if (deltaOnly) {
+			frame();
+		}
 		for (int i = 0; i < count; i++) {
 			addNode(-1);
 		}
@@ -120,7 +133,21 @@ public final class M3Draw2dScript {
 	 * @param mutateInPlace whether steps may change XY constraints in place
 	 */
 	public static String run(long seed, int count, int steps, boolean mutateInPlace) {
-		M3Draw2dScript s = new M3Draw2dScript(seed, count, mutateInPlace);
+		return run(seed, count, steps, mutateInPlace, false);
+	}
+
+	/**
+	 * Runs one script and returns its log; with {@code deltaOnly} the steps are
+	 * model deltas only (add, remove, setConstraint, setBounds, visibility,
+	 * enablement, z-order, preferred size, front bursts, emptying a container)
+	 * inside a fixed frame, so no step changes a freeform extent, scrolls or
+	 * zooms, and the delta gate counters ({@link #gateFullWork},
+	 * {@link #wholeRepaints}) must stay at zero from the first flush on.
+	 */
+	public static String run(long seed, int count, int steps, boolean mutateInPlace, boolean deltaOnly) {
+		M3Draw2dScript s = new M3Draw2dScript(seed, count, mutateInPlace, deltaOnly);
+		gate("reset"); //$NON-NLS-1$
+		s.d.manager.wholeRepaints = 0;
 		for (int i = 0; i < steps; i++) {
 			s.log("step " + i); //$NON-NLS-1$
 			try {
@@ -130,7 +157,47 @@ public final class M3Draw2dScript {
 			}
 		}
 		s.digest();
+		wholeRepaints = s.d.manager.wholeRepaints;
+		Object summary = gate("summary"); //$NON-NLS-1$
+		gateSummary = summary == null ? "-" : summary.toString(); //$NON-NLS-1$
+		Object work = gate("fullWork"); //$NON-NLS-1$
+		gateFullWork = work == null ? 0 : ((Integer) work).intValue();
+		gateSweeps = summary == null ? 0 : field("constraintSweeps"); //$NON-NLS-1$
 		return s.out.toString();
+	}
+
+	/** Calls a static no-argument method of M3DeltaGate when the build has it (the stock build has not). */
+	private static Object gate(String method) {
+		try {
+			return Class.forName("org.eclipse.draw2d.internal.m3.M3DeltaGate").getMethod(method).invoke(null); //$NON-NLS-1$
+		} catch (ReflectiveOperationException e) {
+			return null;
+		}
+	}
+
+	private static int field(String name) {
+		try {
+			return Class.forName("org.eclipse.draw2d.internal.m3.M3DeltaGate").getField(name).getInt(null); //$NON-NLS-1$
+		} catch (ReflectiveOperationException e) {
+			return 0;
+		}
+	}
+
+	/**
+	 * Fixed nodes at the corners of the area the delta steps use, outside the
+	 * node list, so the freeform extents never change; and enough children in
+	 * the second layer and the nested freeform layer that they keep a child
+	 * index from the first flush on (with a small draw2d.viewport.minChildren).
+	 */
+	private void frame() {
+		IFigure[] parents = { d.layer, second, inner };
+		for (int p = 0; p < parents.length; p++) {
+			for (int k = 0; k < 4; k++) {
+				RectangleFigure corner = new RectangleFigure();
+				ids.put(corner, Integer.valueOf(-20 - 4 * p - k));
+				parents[p].add(corner, new Rectangle(k % 2 == 0 ? -20 : 2100, k < 2 ? -20 : 1600, 4, 4));
+			}
+		}
 	}
 
 	void log(String line) {
@@ -168,6 +235,10 @@ public final class M3Draw2dScript {
 			yield box;
 		}
 		case 7 -> {
+			if (deltaOnly) {
+				// a polyline's bounds follow its points and may leave the frame
+				yield new RectangleFigure();
+			}
 			Polyline line = new Polyline();
 			line.setPoints(new PointList(new int[] { random.nextInt(2000), random.nextInt(1500),
 					random.nextInt(2000), random.nextInt(1500) }));
@@ -194,6 +265,10 @@ public final class M3Draw2dScript {
 
 	private Rectangle constraint() {
 		int kind = random.nextInt(40);
+		if (deltaOnly && (kind == 1 || kind == 3)) {
+			// negative and far-off constraints leave the frame
+			kind = 40;
+		}
 		if (kind == 0) {
 			return new Rectangle(random.nextInt(2000), random.nextInt(1500), -1, -1);
 		}
@@ -218,7 +293,7 @@ public final class M3Draw2dScript {
 	private IFigure parentFor() {
 		return switch (random.nextInt(10)) {
 		case 0, 1 -> second;
-		case 2 -> third;
+		case 2 -> deltaOnly ? second : third;
 		case 3 -> inner;
 		default -> d.layer;
 		};
@@ -270,6 +345,10 @@ public final class M3Draw2dScript {
 		if (f == null && op < 8) {
 			op = 0;
 		}
+		if (deltaOnly && (op == 3 || op == 9 || op == 10)) {
+			// in-place constraint changes revalidate the container directly; scroll and zoom are viewport deltas
+			op = op == 3 ? 2 : 16;
+		}
 		switch (op) {
 		case 0 -> addNode(random.nextInt(3) == 0 ? random.nextInt(nodes.size() + 1) : -1);
 		case 1 -> {
@@ -309,7 +388,7 @@ public final class M3Draw2dScript {
 		case 11 -> paint();
 		case 12, 13 -> hits();
 		case 14 -> log("extent " + d.layer.getFreeformExtent() + ' ' + d.pane.getFreeformExtent()); //$NON-NLS-1$
-		case 15 -> refill(new IFigure[] { second, third, inner }[random.nextInt(3)]);
+		case 15 -> refill(new IFigure[] { second, deltaOnly ? inner : third, inner }[random.nextInt(3)]);
 		case 18 -> burst();
 		default -> flush();
 		}

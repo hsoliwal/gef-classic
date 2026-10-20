@@ -22,7 +22,7 @@ recipeList:
 type: specs.openrewrite.org/v1beta/recipe
 name: com.synexia.openrewrite.viewport.Draw2dViewportFigure
 displayName: Figure child index hooks
-description: The index field, its lazy accessor, and the delegations of Figure.
+description: The index field, its lazy accessor, the delegations of Figure, and the announcements of invalidations that change no constraint in place.
 recipeList:
   - com.synexia.openrewrite.viewport.M3AddMemberIfMissing:
       declaringClasses: [org.eclipse.draw2d.Figure]
@@ -87,6 +87,47 @@ recipeList:
       anchor: "for (IFigure fig : getChildrenRevIterable())"
       position: BEFORE
       statements: "\t\torg.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();\n\t\tif (m3 != null) {\n\t\t\treturn m3.findMouseEventTargetAt(x, y);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: add
+      parameterCount: 3
+      anchor: "revalidate();"
+      position: BEFORE
+      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.explain();\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: remove
+      parameterCount: 1
+      anchor: "revalidate();"
+      position: BEFORE
+      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.explain();\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: setConstraint
+      parameterCount: 2
+      anchor: "revalidate();"
+      position: BEFORE
+      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.explain();\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: setBounds
+      parameterCount: 1
+      anchor: "invalidate();"
+      position: BEFORE
+      statements: "\t\t\t\tif (m3Children != null) {\n\t\t\t\t\tm3Children.explain();\n\t\t\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: revalidate
+      parameterCount: 0
+      anchor: "getParent().revalidate();"
+      position: BEFORE
+      statements: "\t\t\tif (getParent() instanceof Figure p && p.m3Children != null) {\n\t\t\t\tp.m3Children.explain();\n\t\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.Figure]
+      methodName: invalidate
+      parameterCount: 0
+      position: METHOD_START
+      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.invalidated(layoutManager instanceof LayoutNotifier);\n\t\t}"
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: com.synexia.openrewrite.viewport.Draw2dViewportLayer
@@ -138,3 +179,10 @@ recipeList:
       anchor: "for (IFigure child : host.getChildren())"
       position: BEFORE
       statements: "\t\tif (host instanceof Figure f && f.m3ChildIndex() != null) {\n\t\t\tf.m3ChildIndex().freeform().setFreeformBounds(bounds);\n\t\t\treturn;\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.FreeformHelper]
+      methodName: invalidate
+      parameterCount: 0
+      anchor: "host.getParent().revalidate();"
+      position: BEFORE
+      statements: "\t\t\tif (host.getParent() instanceof Figure p && p.m3Children != null) {\n\t\t\t\tp.m3Children.explain();\n\t\t\t}"

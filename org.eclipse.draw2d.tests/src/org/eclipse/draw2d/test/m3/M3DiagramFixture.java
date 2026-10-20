@@ -24,10 +24,12 @@ import org.eclipse.draw2d.FreeformViewport;
 import org.eclipse.draw2d.Graphics;
 import org.eclipse.draw2d.GraphicsSource;
 import org.eclipse.draw2d.IFigure;
+import org.eclipse.draw2d.LayeredPane;
 import org.eclipse.draw2d.RectangleFigure;
 import org.eclipse.draw2d.ScalableFreeformLayeredPane;
 import org.eclipse.draw2d.StackLayout;
 import org.eclipse.draw2d.UpdateManager;
+import org.eclipse.draw2d.Viewport;
 import org.eclipse.draw2d.geometry.Rectangle;
 
 /**
@@ -50,6 +52,24 @@ public class M3DiagramFixture {
 		int repairs;
 		/** When set, repairs paint into this graphics instead of a new recording one. */
 		public M3NullGraphics nullGraphics;
+		/**
+		 * Dirty regions covering the whole bounds of the root, a viewport, a layered
+		 * pane or a layer: repaints of the whole diagram view rather than of the
+		 * figures a delta touched.
+		 */
+		public int wholeRepaints;
+
+		@Override
+		public synchronized void addDirtyRegion(IFigure figure, int x, int y, int w, int h) {
+			if (w > 0 && h > 0 && (figure.getParent() == null || figure instanceof Viewport
+					|| figure instanceof LayeredPane || figure.getParent() instanceof LayeredPane)) {
+				Rectangle b = figure.getBounds();
+				if (x <= b.x && y <= b.y && x + w >= b.right() && y + h >= b.bottom()) {
+					wholeRepaints++;
+				}
+			}
+			super.addDirtyRegion(figure, x, y, w, h);
+		}
 
 		@Override
 		protected void sendUpdateRequest() {

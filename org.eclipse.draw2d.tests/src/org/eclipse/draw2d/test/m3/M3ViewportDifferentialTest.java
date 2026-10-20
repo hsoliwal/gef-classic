@@ -55,18 +55,34 @@ public class M3ViewportDifferentialTest {
 
 	/** Same, with the verify switch chosen. */
 	static ClassLoader loader(String build, String mode, boolean trust, boolean verify) throws Exception {
+		return loader(build, mode, trust ? "trusted" : "attributed", verify, null); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	/**
+	 * Same, with the XY constraint policy ({@code exact}, {@code attributed},
+	 * {@code trusted}) and the index threshold ({@code null}: default) chosen.
+	 */
+	static ClassLoader loader(String build, String mode, String constraints, boolean verify, String minChildren)
+			throws Exception {
 		URLClassLoader swt = new URLClassLoader(new URL[] { url("m3.swt.jar") }, //$NON-NLS-1$
 				ClassLoader.getPlatformClassLoader());
 		URLClassLoader loader = new URLClassLoader(new URL[] { url(build), url("m3.draw2d.tests") }, swt); //$NON-NLS-1$
 		synchronized (M3ViewportDifferentialTest.class) {
-			String[] keys = { "draw2d.viewport.mode", "draw2d.viewport.verify", "draw2d.viewport.trustConstraints" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			String[] keys = { "draw2d.viewport.mode", "draw2d.viewport.verify", "draw2d.viewport.trustConstraints", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					"draw2d.viewport.constraints", "draw2d.viewport.minChildren" }; //$NON-NLS-1$ //$NON-NLS-2$
 			String[] saved = new String[keys.length];
 			for (int i = 0; i < keys.length; i++) {
 				saved[i] = System.getProperty(keys[i]);
 			}
 			System.setProperty("draw2d.viewport.mode", mode); //$NON-NLS-1$
 			System.setProperty("draw2d.viewport.verify", Boolean.toString(verify)); //$NON-NLS-1$
-			System.setProperty("draw2d.viewport.trustConstraints", Boolean.toString(trust)); //$NON-NLS-1$
+			System.clearProperty("draw2d.viewport.trustConstraints"); //$NON-NLS-1$
+			System.setProperty("draw2d.viewport.constraints", constraints); //$NON-NLS-1$
+			if (minChildren == null) {
+				System.clearProperty("draw2d.viewport.minChildren"); //$NON-NLS-1$
+			} else {
+				System.setProperty("draw2d.viewport.minChildren", minChildren); //$NON-NLS-1$
+			}
 			try {
 				Class.forName("org.eclipse.draw2d.internal.m3.M3ViewportMode", true, loader); //$NON-NLS-1$
 			} catch (ClassNotFoundException e) {
