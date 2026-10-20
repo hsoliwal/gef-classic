@@ -299,6 +299,7 @@ public final class M3Draw2dScript {
 		case 11 -> paint();
 		case 12, 13 -> hits();
 		case 14 -> log("extent " + d.layer.getFreeformExtent() + ' ' + d.pane.getFreeformExtent()); //$NON-NLS-1$
+		case 15 -> refill(new IFigure[] { second, third, inner }[random.nextInt(3)]);
 		case 18 -> burst();
 		default -> flush();
 		}
@@ -309,6 +310,23 @@ public final class M3Draw2dScript {
 		for (int k = 0; k < 14; k++) {
 			IFigure f = create();
 			d.layer.add(f, constraint(), 1);
+			nodes.add(f);
+		}
+	}
+
+	/** Empties a container (stock Figure then replaces its child list on the next add) and adds a few nodes. */
+	private void refill(IFigure parent) {
+		if (random.nextInt(8) != 0) {
+			return;
+		}
+		for (IFigure child : new ArrayList<>(parent.getChildren())) {
+			parent.remove(child);
+			nodes.remove(child);
+		}
+		log("emptied " + id(parent)); //$NON-NLS-1$
+		for (int k = 0; k < 3; k++) {
+			IFigure f = create();
+			parent.add(f, constraint());
 			nodes.add(f);
 		}
 	}

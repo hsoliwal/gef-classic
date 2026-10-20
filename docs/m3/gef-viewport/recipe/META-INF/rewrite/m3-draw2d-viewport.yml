@@ -40,7 +40,7 @@ recipeList:
       parameterCount: 3
       anchor: "figure.setParent(this);"
       position: AFTER
-      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.added(figure, index);\n\t\t}"
+      statements: "\t\tif (m3Children != null) {\n\t\t\tm3Children.added(figure, index, children);\n\t\t}"
   - com.synexia.openrewrite.viewport.M3InsertStatements:
       declaringClasses: [org.eclipse.draw2d.Figure]
       methodName: remove

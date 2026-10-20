@@ -163,7 +163,7 @@ public class M3ChildIndexTest {
 		child.getBounds().x += 2000;
 		assertThrows(IllegalStateException.class, () -> layer.findFigureAt(x, y));
 		assertThrows(IllegalStateException.class,
-				() -> layer.paint(new M3NullGraphics().reset(new Rectangle(0, 0, 400, 400))));
+				() -> layer.paint(new M3NullGraphics().reset(new Rectangle(240, 0, 60, 40))));
 		child.getBounds().x -= 2000;
 		IFigure other = layer.getChildren().get(6);
 		other.getBounds().x += 2;
