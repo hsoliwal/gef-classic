@@ -1,0 +1,3 @@
+label	result
+stock (03623769), canvas hidden but unknown to Draw2d	validation passes 100, paint passes 100, 10^4 changes in 5300 / 2638 / 3749 ms (3 runs)
+viewport mode, M3Visibility hidden	validation passes 0, paint passes 0, 10^4 changes in 31 / 35 / 49 ms (3 runs)

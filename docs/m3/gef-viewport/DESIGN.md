@@ -141,6 +141,18 @@ tree root. `setFreeformBounds` visits only the FreeformFigure children, in list 
   of its container, not at the next layout the container gets for another reason (table in 3.4); `exact`
   restores the stock timing.
 
+### 3.7 Hidden viewports (`M3Visibility`, brief rule 24)
+Stock Draw2d validates and paints a hidden canvas: the posted update runs whether or not the canvas can be seen.
+In the viewport mode `LightweightSystem` registers its canvas with `M3Visibility`; while the canvas is hidden
+(disposed, not visible itself or through an ancestor such as an unselected editor tab, or with an empty client
+area) the posted update (`DeferredUpdateManager.UpdateRequest.run`) returns at once: model changes still reach
+the figures and the child indexes, invalid figures and dirty regions accumulate, but nothing is validated or
+painted. When the canvas shows, the window system paints all of it once; the first update validates once and
+drops the regions dirtied while hidden instead of painting them a second time (and when the window system's
+paint comes first, it drops them). An explicit `performUpdate` while hidden still validates (the caller asked for
+current bounds) but does not paint. Gate: `M3HiddenViewportTest` (hide, 10^4 changes with 100 posted updates,
+show: 0 validation and 0 paint passes while hidden, then exactly 1 validation pass and 1 paint pass).
+
 ## 4. Proof
 
 - **Recorded differential** (`M3ViewportDifferentialTest`, `M3Draw2dScript`): stock Draw2d and the M3 build in
