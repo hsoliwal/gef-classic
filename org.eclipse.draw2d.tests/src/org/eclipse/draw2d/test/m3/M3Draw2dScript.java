@@ -101,7 +101,8 @@ public final class M3Draw2dScript {
 		});
 		d.pane.add(third, "third"); //$NON-NLS-1$
 		inner.setLayoutManager(new FreeformLayout());
-		d.layer.add(inner, new Rectangle(5, 5, 50, 50));
+		// no XY constraint: FreeformHelper.setFreeformBounds alone sizes a nested freeform layer
+		d.layer.add(inner);
 		ids.put(inner, Integer.valueOf(-10));
 		for (int i = 0; i < count; i++) {
 			addNode(-1);

@@ -5,11 +5,12 @@
 # Compiles Draw2d and the Draw2d M3 tests with javac (no Tycho), for the viewport differential and benchmarks.
 # Usage: build.sh <worktree> <out-dir> [stock-revision]
 #   <out-dir>/draw2d   Draw2d of the worktree (the M3 build; hooks inert unless -Ddraw2d.viewport.mode=viewport)
-#   <out-dir>/stock    Draw2d of <stock-revision> (default origin/master): the differential reference
+#   <out-dir>/stock    Draw2d of <stock-revision>: the differential reference. Default 03623769, fork master
+#                      after the upstream sync (eclipse-gef/gef-classic 4052c50a1e) and before the viewport hooks.
 #   <out-dir>/tests    GraphicsStub + org.eclipse.draw2d.test.m3 (compiled against the M3 build, public API only)
 # Run it under C:/m3-superset/tools/build_lock.sh. Output must stay on S:.
 set -e
-W=$1; OUT=$2; REV=${3:-origin/master}
+W=$1; OUT=$2; REV=${3:-03623769}
 JH="C:/Program Files/Java/jdk-21"
 M2=$(cygpath -m "$HOME/.m2/repository")
 SWT=$M2/org/eclipse/platform/org.eclipse.swt.win32.win32.x86_64/3.135.0/org.eclipse.swt.win32.win32.x86_64-3.135.0.jar
