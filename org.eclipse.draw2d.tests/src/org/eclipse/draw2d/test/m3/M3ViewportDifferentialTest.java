@@ -105,6 +105,8 @@ public class M3ViewportDifferentialTest {
 			}
 			try {
 				Class.forName("org.eclipse.draw2d.internal.m3.M3ViewportMode", true, loader); //$NON-NLS-1$
+				// classes reading switches at initialization: initialize them while the switches are set
+				Class.forName("org.eclipse.draw2d.internal.m3.M3Damage", true, loader); //$NON-NLS-1$
 			} catch (ClassNotFoundException e) {
 				// the stock build has no M3 classes
 			} finally {
@@ -192,7 +194,12 @@ public class M3ViewportDifferentialTest {
 		ClassLoader m3 = loader("m3.draw2d.m3", "viewport", true, true); //$NON-NLS-1$ //$NON-NLS-2$
 		boolean caught = false;
 		for (long seed = 1; seed <= 4 && !caught; seed++) {
-			caught = run(m3, seed, 300, true).contains("error java.lang.IllegalStateException"); //$NON-NLS-1$
+			try {
+				caught = run(m3, seed, 300, true).contains("error java.lang.IllegalStateException"); //$NON-NLS-1$
+			} catch (java.lang.reflect.InvocationTargetException e) {
+				// thrown outside a step (by the final flush)
+				caught = e.getCause() instanceof IllegalStateException;
+			}
 		}
 		assertTrue(caught, "verify mode must reject in-place constraint changes when trustConstraints is set"); //$NON-NLS-1$
 	}

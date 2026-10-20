@@ -21,23 +21,28 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.LineAttributes;
 
+import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.PointList;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.draw2d.test.utils.GraphicsStub;
 
 /**
- * A headless Graphics that keeps the translation and clip state like
- * SWTGraphics and records every drawing and state operation. The record is an
- * order-sensitive 64-bit hash plus an operation count, and optionally a
- * readable log, so two Draw2d builds painting the same figures can be compared
- * operation by operation without a display. Queries (getClip and friends) are
- * not recorded: they produce no pixels.
+ * A headless Graphics that keeps the transform (translation and scale) and the
+ * clip like SWTGraphics and records every drawing and state operation in device
+ * coordinates. The record is an order-sensitive 64-bit hash plus an operation
+ * count, and optionally a readable log, so two Draw2d builds painting the same
+ * figures can be compared operation by operation without a display. Queries
+ * (getClip and friends) are not recorded: they produce no pixels. With a
+ * {@link M3FrameRaster}, every drawing operation also stamps its device pixels
+ * there.
  */
 public class M3RecordingGraphics extends GraphicsStub {
 
+	/** Graphics state: device = user * s + (ox, oy); the clip is kept in device pixels. */
 	private static final class State {
-		int tx;
-		int ty;
+		double s = 1;
+		double ox;
+		double oy;
 		int cx;
 		int cy;
 		int cw;
@@ -49,19 +54,20 @@ public class M3RecordingGraphics extends GraphicsStub {
 		Font font;
 
 		State copy() {
-			State s = new State();
-			s.tx = tx;
-			s.ty = ty;
-			s.cx = cx;
-			s.cy = cy;
-			s.cw = cw;
-			s.ch = ch;
-			s.lineWidth = lineWidth;
-			s.lineStyle = lineStyle;
-			s.bg = bg;
-			s.fg = fg;
-			s.font = font;
-			return s;
+			State c = new State();
+			c.s = s;
+			c.ox = ox;
+			c.oy = oy;
+			c.cx = cx;
+			c.cy = cy;
+			c.cw = cw;
+			c.ch = ch;
+			c.lineWidth = lineWidth;
+			c.lineStyle = lineStyle;
+			c.bg = bg;
+			c.fg = fg;
+			c.font = font;
+			return c;
 		}
 	}
 
@@ -74,7 +80,7 @@ public class M3RecordingGraphics extends GraphicsStub {
 	private long lastOp;
 
 	/**
-	 * @param clip the device clip, in device coordinates
+	 * @param clip    the device clip, in device coordinates
 	 * @param keepLog whether to keep a readable log as well as the hash
 	 */
 	public M3RecordingGraphics(Rectangle clip, boolean keepLog) {
@@ -95,95 +101,6 @@ public class M3RecordingGraphics extends GraphicsStub {
 		this.raster = raster;
 		if (raster != null) {
 			raster.clear(clip.x, clip.y, clip.width, clip.height);
-		}
-	}
-
-	/**
-	 * Model pixel value of the operation just recorded: its own arguments and the
-	 * colours and line width, not its place in the order; never 0 or
-	 * {@link M3FrameRaster#EXPOSED}.
-	 */
-	private int pixel() {
-		long h = lastOp ^ (state.fg == null ? 7 : state.fg.hashCode()) * 31L ^ (state.bg == null ? 11 : state.bg.hashCode())
-				^ Float.floatToIntBits(state.lineWidth);
-		int v = (int) (h ^ (h >>> 32)) | 1;
-		return v == M3FrameRaster.EXPOSED ? v + 2 : v;
-	}
-
-	/** Stamps the device rectangle, cut by the current clip. */
-	private void stamp(int x, int y, int w, int h) {
-		if (raster != null) {
-			stampValue(x, y, w, h, pixel());
-		}
-	}
-
-	private void stampValue(int x, int y, int w, int h, int value) {
-		int cx = state.cx + state.tx;
-		int cy = state.cy + state.ty;
-		int x1 = Math.max(x, cx);
-		int y1 = Math.max(y, cy);
-		long x2 = Math.min((long) x + w, (long) cx + state.cw);
-		long y2 = Math.min((long) y + h, (long) cy + state.ch);
-		if (x2 > x1 && y2 > y1) {
-			raster.fill(x1, y1, (int) (x2 - x1), (int) (y2 - y1), value);
-		}
-	}
-
-	/** Stamps a line of the current width between two device points, cut to the clip first (Liang-Barsky). */
-	private void stampLine(int x1, int y1, int x2, int y2) {
-		if (raster == null) {
-			return;
-		}
-		int lw = Math.max(1, (int) Math.ceil(state.lineWidth));
-		double minX = (double) state.cx + state.tx - lw;
-		double minY = (double) state.cy + state.ty - lw;
-		double maxX = minX + state.cw + 2.0 * lw;
-		double maxY = minY + state.ch + 2.0 * lw;
-		double dx = (double) x2 - x1;
-		double dy = (double) y2 - y1;
-		double[] p = { -dx, dx, -dy, dy };
-		double[] q = { x1 - minX, maxX - x1, y1 - minY, maxY - y1 };
-		double t0 = 0;
-		double t1 = 1;
-		for (int i = 0; i < 4; i++) {
-			if (p[i] == 0) {
-				if (q[i] < 0) {
-					return;
-				}
-			} else {
-				double t = q[i] / p[i];
-				if (p[i] < 0) {
-					t0 = Math.max(t0, t);
-				} else {
-					t1 = Math.min(t1, t);
-				}
-			}
-		}
-		if (t0 > t1) {
-			return;
-		}
-		// the points follow the whole segment's parameter, so a clipped repaint stamps the same pixels
-		long steps = (long) Math.max(Math.abs(dx), Math.abs(dy));
-		long from = (long) Math.floor(t0 * steps);
-		long to = (long) Math.ceil(t1 * steps);
-		int value = pixel();
-		for (long i = from; i <= to; i++) {
-			long x = steps == 0 ? x1 : x1 + Math.round(dx * i / steps);
-			long y = steps == 0 ? y1 : y1 + Math.round(dy * i / steps);
-			stampValue((int) x - lw / 2, (int) y - lw / 2, lw, lw, value);
-		}
-	}
-
-	/** Stamps the segments of a polyline, closed for a polygon. */
-	private void stampSegments(PointList points, boolean closed) {
-		int n = points.size();
-		for (int i = 0; i + 1 < n; i++) {
-			stampLine(points.getPoint(i).x + state.tx, points.getPoint(i).y + state.ty, points.getPoint(i + 1).x + state.tx,
-					points.getPoint(i + 1).y + state.ty);
-		}
-		if (closed && n > 2) {
-			stampLine(points.getPoint(n - 1).x + state.tx, points.getPoint(n - 1).y + state.ty,
-					points.getPoint(0).x + state.tx, points.getPoint(0).y + state.ty);
 		}
 	}
 
@@ -223,56 +140,205 @@ public class M3RecordingGraphics extends GraphicsStub {
 		}
 	}
 
+	/** Device x of a user x (left edges). */
+	private int deviceX(double x) {
+		return (int) Math.floor(x * state.s + state.ox);
+	}
+
+	/** Device y of a user y (top edges). */
+	private int deviceY(double y) {
+		return (int) Math.floor(y * state.s + state.oy);
+	}
+
+	/** Device x of a user x (right edges, rounded outward). */
+	private int deviceRight(double x) {
+		return (int) Math.ceil(x * state.s + state.ox);
+	}
+
+	/** Device y of a user y (bottom edges, rounded outward). */
+	private int deviceBottom(double y) {
+		return (int) Math.ceil(y * state.s + state.oy);
+	}
+
+	/** Device line width, at least one pixel. */
+	private int lineWidth() {
+		return Math.max(1, (int) Math.ceil(state.lineWidth * state.s));
+	}
+
 	private void draw(int code, int x, int y, int w, int h) {
-		record(code, x + state.tx, y + state.ty, w, h);
-		int dx = x + state.tx;
-		int dy = y + state.ty;
-		int lw = Math.max(1, (int) Math.ceil(state.lineWidth));
+		int x1 = deviceX(x);
+		int y1 = deviceY(y);
+		int x2 = deviceRight((double) x + w);
+		int y2 = deviceBottom((double) y + h);
+		record(code, x1, y1, x2 - x1, y2 - y1);
+		int lw = lineWidth();
 		switch (code) {
-		case 10, 12, 18 -> stamp(dx, dy, w, h);
-		case 11, 13, 19 -> stamp(dx - lw, dy - lw, w + 2 * lw + 1, h + 2 * lw + 1);
-		case 20, 21 -> stamp(dx, dy, 1, 1);
-		default -> {
-			// polylines and polygons stamp their segments
+		case 10, 12, 18 -> stamp(x1, y1, x2 - x1, y2 - y1);
+		default -> stamp(x1 - lw, y1 - lw, x2 - x1 + 2 * lw + 1, y2 - y1 + 2 * lw + 1);
 		}
+	}
+
+	private void text(int code, String s, int x, int y) {
+		int x1 = deviceX(x);
+		int y1 = deviceY(y);
+		record(code, x1, y1, s.hashCode(), 0);
+		stamp(x1, y1, 1, 1);
+	}
+
+	/**
+	 * Model pixel value of the operation just recorded: its own arguments and the
+	 * colours and line width, not its place in the order; never 0 or
+	 * {@link M3FrameRaster#EXPOSED}.
+	 */
+	private int pixel() {
+		long h = lastOp ^ (state.fg == null ? 7 : state.fg.hashCode()) * 31L ^ (state.bg == null ? 11 : state.bg.hashCode())
+				^ Float.floatToIntBits(state.lineWidth);
+		int v = (int) (h ^ (h >>> 32)) | 1;
+		return v == M3FrameRaster.EXPOSED ? v + 2 : v;
+	}
+
+	/** Stamps the device rectangle, cut by the clip. */
+	private void stamp(int x, int y, int w, int h) {
+		if (raster != null) {
+			stampValue(x, y, w, h, pixel());
+		}
+	}
+
+	private void stampValue(int x, int y, int w, int h, int value) {
+		int x1 = Math.max(x, state.cx);
+		int y1 = Math.max(y, state.cy);
+		long x2 = Math.min((long) x + w, (long) state.cx + state.cw);
+		long y2 = Math.min((long) y + h, (long) state.cy + state.ch);
+		if (x2 > x1 && y2 > y1) {
+			raster.fill(x1, y1, (int) (x2 - x1), (int) (y2 - y1), value);
+		}
+	}
+
+	/**
+	 * Stamps a line of the current width between two device points: the points
+	 * follow the whole segment's parameter, so a clipped repaint stamps the same
+	 * pixels as a full paint; only the parameter range inside the clip is walked
+	 * (Liang-Barsky).
+	 */
+	private void stampLine(int x1, int y1, int x2, int y2) {
+		if (raster == null) {
+			return;
+		}
+		int lw = lineWidth();
+		double minX = (double) state.cx - lw;
+		double minY = (double) state.cy - lw;
+		double maxX = minX + state.cw + 2.0 * lw;
+		double maxY = minY + state.ch + 2.0 * lw;
+		double dx = (double) x2 - x1;
+		double dy = (double) y2 - y1;
+		double[] p = { -dx, dx, -dy, dy };
+		double[] q = { x1 - minX, maxX - x1, y1 - minY, maxY - y1 };
+		double t0 = 0;
+		double t1 = 1;
+		for (int i = 0; i < 4; i++) {
+			if (p[i] == 0) {
+				if (q[i] < 0) {
+					return;
+				}
+			} else if (p[i] < 0) {
+				t0 = Math.max(t0, q[i] / p[i]);
+			} else {
+				t1 = Math.min(t1, q[i] / p[i]);
+			}
+		}
+		if (t0 > t1) {
+			return;
+		}
+		long steps = (long) Math.max(Math.abs(dx), Math.abs(dy));
+		long from = (long) Math.floor(t0 * steps);
+		long to = (long) Math.ceil(t1 * steps);
+		int value = pixel();
+		for (long i = from; i <= to; i++) {
+			long x = steps == 0 ? x1 : x1 + Math.round(dx * i / steps);
+			long y = steps == 0 ? y1 : y1 + Math.round(dy * i / steps);
+			stampValue((int) x - lw / 2, (int) y - lw / 2, lw, lw, value);
+		}
+	}
+
+	/** Records a polyline or polygon by its device bounds and stamps its device segments. */
+	private void points(int code, PointList points, boolean closed, boolean fill) {
+		int n = points.size();
+		int[] xs = new int[n];
+		int[] ys = new int[n];
+		int minX = Integer.MAX_VALUE;
+		int minY = Integer.MAX_VALUE;
+		int maxX = Integer.MIN_VALUE;
+		int maxY = Integer.MIN_VALUE;
+		Point pt = new Point();
+		for (int i = 0; i < n; i++) {
+			points.getPoint(pt, i);
+			xs[i] = (int) Math.round(pt.x * state.s + state.ox);
+			ys[i] = (int) Math.round(pt.y * state.s + state.oy);
+			minX = Math.min(minX, xs[i]);
+			minY = Math.min(minY, ys[i]);
+			maxX = Math.max(maxX, xs[i]);
+			maxY = Math.max(maxY, ys[i]);
+		}
+		record(code, n == 0 ? 0 : minX, n == 0 ? 0 : minY, n == 0 ? 0 : maxX - minX, n);
+		if (n == 0) {
+			return;
+		}
+		if (fill) {
+			stamp(minX, minY, maxX - minX + 1, maxY - minY + 1);
+			return;
+		}
+		for (int i = 0; i + 1 < n; i++) {
+			stampLine(xs[i], ys[i], xs[i + 1], ys[i + 1]);
+		}
+		if (closed && n > 2) {
+			stampLine(xs[n - 1], ys[n - 1], xs[0], ys[0]);
 		}
 	}
 
 	@Override
 	public void clipRect(Rectangle r) {
-		int x1 = Math.max(state.cx, r.x);
-		int y1 = Math.max(state.cy, r.y);
-		int x2 = Math.min(state.cx + state.cw, r.x + r.width);
-		int y2 = Math.min(state.cy + state.ch, r.y + r.height);
+		int x1 = Math.max(state.cx, deviceX(r.x));
+		int y1 = Math.max(state.cy, deviceY(r.y));
+		int x2 = Math.min(state.cx + state.cw, deviceRight((double) r.x + r.width));
+		int y2 = Math.min(state.cy + state.ch, deviceBottom((double) r.y + r.height));
 		state.cx = x1;
 		state.cy = y1;
 		state.cw = Math.max(0, x2 - x1);
 		state.ch = Math.max(0, y2 - y1);
-		record(1, state.cx + state.tx, state.cy + state.ty, state.cw, state.ch);
+		record(1, state.cx, state.cy, state.cw, state.ch);
 	}
 
 	@Override
 	public void setClip(Rectangle r) {
-		state.cx = r.x;
-		state.cy = r.y;
-		state.cw = r.width;
-		state.ch = r.height;
-		record(2, r.x + state.tx, r.y + state.ty, r.width, r.height);
+		state.cx = deviceX(r.x);
+		state.cy = deviceY(r.y);
+		state.cw = Math.max(0, deviceRight((double) r.x + r.width) - state.cx);
+		state.ch = Math.max(0, deviceBottom((double) r.y + r.height) - state.cy);
+		record(2, state.cx, state.cy, state.cw, state.ch);
 	}
 
 	@Override
 	public Rectangle getClip(Rectangle rect) {
-		rect.setBounds(state.cx, state.cy, state.cw, state.ch);
+		// the user rectangle covering the device clip (rounded outward)
+		int x1 = (int) Math.floor((state.cx - state.ox) / state.s);
+		int y1 = (int) Math.floor((state.cy - state.oy) / state.s);
+		int x2 = (int) Math.ceil((state.cx + state.cw - state.ox) / state.s);
+		int y2 = (int) Math.ceil((state.cy + state.ch - state.oy) / state.s);
+		rect.setBounds(x1, y1, x2 - x1, y2 - y1);
 		return rect;
 	}
 
 	@Override
 	public void translate(int dx, int dy) {
-		state.tx += dx;
-		state.ty += dy;
-		state.cx -= dx;
-		state.cy -= dy;
+		state.ox += dx * state.s;
+		state.oy += dy * state.s;
 		record(3, dx, dy, 0, 0);
+	}
+
+	@Override
+	public void scale(double amount) {
+		state.s *= amount;
+		record(44, (int) Double.doubleToLongBits(amount), (int) (Double.doubleToLongBits(amount) >>> 32), 0, 0);
 	}
 
 	@Override
@@ -320,29 +386,27 @@ public class M3RecordingGraphics extends GraphicsStub {
 
 	@Override
 	public void drawLine(int x1, int y1, int x2, int y2) {
-		record(14, x1 + state.tx, y1 + state.ty, x2 + state.tx, y2 + state.ty);
-		stampLine(x1 + state.tx, y1 + state.ty, x2 + state.tx, y2 + state.ty);
+		int a = (int) Math.round(x1 * state.s + state.ox);
+		int b = (int) Math.round(y1 * state.s + state.oy);
+		int c = (int) Math.round(x2 * state.s + state.ox);
+		int d = (int) Math.round(y2 * state.s + state.oy);
+		record(14, a, b, c, d);
+		stampLine(a, b, c, d);
 	}
 
 	@Override
 	public void drawPolyline(PointList points) {
-		Rectangle b = points.getBounds();
-		draw(15, b.x, b.y, b.width, points.size());
-		stampSegments(points, false);
+		points(15, points, false, false);
 	}
 
 	@Override
 	public void drawPolygon(PointList points) {
-		Rectangle b = points.getBounds();
-		draw(16, b.x, b.y, b.width, points.size());
-		stampSegments(points, true);
+		points(16, points, true, false);
 	}
 
 	@Override
 	public void fillPolygon(PointList points) {
-		Rectangle b = points.getBounds();
-		draw(17, b.x, b.y, b.width, points.size());
-		stamp(b.x + state.tx, b.y + state.ty, b.width + 1, b.height + 1);
+		points(17, points, true, true);
 	}
 
 	@Override
@@ -357,12 +421,12 @@ public class M3RecordingGraphics extends GraphicsStub {
 
 	@Override
 	public void drawString(String s, int x, int y) {
-		draw(20, x, y, s.hashCode(), 0);
+		text(20, s, x, y);
 	}
 
 	@Override
 	public void drawText(String s, int x, int y) {
-		draw(21, x, y, s.hashCode(), 0);
+		text(21, s, x, y);
 	}
 
 	@Override
@@ -476,11 +540,6 @@ public class M3RecordingGraphics extends GraphicsStub {
 	@Override
 	public void setAlpha(int alpha) {
 		record(43, alpha, 0, 0, 0);
-	}
-
-	@Override
-	public void scale(double amount) {
-		record(44, (int) Double.doubleToLongBits(amount), (int) (Double.doubleToLongBits(amount) >>> 32), 0, 0);
 	}
 
 	@Override

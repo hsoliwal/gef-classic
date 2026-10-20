@@ -81,8 +81,9 @@ public class M3ViewportDeltaTest {
 			for (int k = 0; k < 10; k++) {
 				int nw = w + phase[0];
 				int nh = h + phase[1];
-				int expected = meeting(d, strip(Math.min(w, nw), 0, Math.abs(nw - w), Math.max(h, nh)),
-						strip(0, Math.min(h, nh), Math.max(w, nw), Math.abs(nh - h)));
+				// each strip is repaired on its own: a child meeting both is painted twice
+				int expected = meeting(d, strip(Math.min(w, nw), 0, Math.abs(nw - w), Math.max(h, nh)))
+						+ meeting(d, strip(0, Math.min(h, nh), Math.max(w, nw), Math.abs(nh - h)));
 				M3DeltaGate.reset();
 				d.resize(nw, nh);
 				d.manager.flush();
