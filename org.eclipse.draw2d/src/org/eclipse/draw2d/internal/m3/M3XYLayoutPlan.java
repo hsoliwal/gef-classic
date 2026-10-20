@@ -215,7 +215,8 @@ public final class M3XYLayoutPlan {
 		int kept = 0;
 		for (int i = 0; i < dirtyList.size(); i++) {
 			int s = dirtyList.get(i);
-			if (isDirty(s) && index.slots.figure(s) != null) {
+			if (isDirty(s)) {
+				// removal clears the bit, so a dirty slot holds a child
 				dirtyList.set(kept++, s);
 				offer(s, cursor, labels);
 			}

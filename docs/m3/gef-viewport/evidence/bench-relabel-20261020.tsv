@@ -1,0 +1,40 @@
+prev(12ff5297)+trust	100000	build+validate	1289196600	-
+prev(12ff5297)+trust	100000	paint-viewport	41700	0
+prev(12ff5297)+trust	100000	paint-damage-50x50	800	0
+prev(12ff5297)+trust	100000	findFigureAt	900	58
+prev(12ff5297)+trust	100000	findMouseEventTargetAt	700	37
+prev(12ff5297)+trust	100000	move-node+update	151600	736
+prev(12ff5297)+trust	100000	move-visible-node+update	137800	736
+prev(12ff5297)+trust	100000	scroll+update	135600	515
+prev(12ff5297)+trust	100000	insert-at-1+update (mean of 4000)	631238	2758
+prev(12ff5297)+trust	100000	insert-at-1+update (p99 of 4000)	8847300	-
+now+trusted	100000	build+validate	1543087300	-
+now+trusted	100000	paint-viewport	78500	0
+now+trusted	100000	paint-damage-50x50	800	0
+now+trusted	100000	findFigureAt	400	0
+now+trusted	100000	findMouseEventTargetAt	900	0
+now+trusted	100000	move-node+update	139200	704
+now+trusted	100000	move-visible-node+update	113500	704
+now+trusted	100000	scroll+update	55900	418
+now+trusted	100000	insert-at-1+update (mean of 4000)	51960	2726
+now+trusted	100000	insert-at-1+update (p99 of 4000)	591400	-
+prev(12ff5297)+trust	1000000	build+validate	6958668300	-
+prev(12ff5297)+trust	1000000	paint-viewport	45300	0
+prev(12ff5297)+trust	1000000	paint-damage-50x50	900	0
+prev(12ff5297)+trust	1000000	findFigureAt	500	32
+prev(12ff5297)+trust	1000000	findMouseEventTargetAt	700	0
+prev(12ff5297)+trust	1000000	move-node+update	146500	758
+prev(12ff5297)+trust	1000000	move-visible-node+update	139100	743
+prev(12ff5297)+trust	1000000	scroll+update	76100	413
+prev(12ff5297)+trust	1000000	insert-at-1+update (mean of 4000)	11292348	17246
+prev(12ff5297)+trust	1000000	insert-at-1+update (p99 of 4000)	161490400	-
+now+trusted	1000000	build+validate	6513845900	-
+now+trusted	1000000	paint-viewport	47400	0
+now+trusted	1000000	paint-damage-50x50	700	0
+now+trusted	1000000	findFigureAt	400	32
+now+trusted	1000000	findMouseEventTargetAt	600	0
+now+trusted	1000000	move-node+update	117100	743
+now+trusted	1000000	move-visible-node+update	121500	768
+now+trusted	1000000	scroll+update	61500	507
+now+trusted	1000000	insert-at-1+update (mean of 4000)	292250	17246
+now+trusted	1000000	insert-at-1+update (p99 of 4000)	932800	-

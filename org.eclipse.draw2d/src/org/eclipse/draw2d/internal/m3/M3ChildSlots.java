@@ -41,10 +41,12 @@ public final class M3ChildSlots {
 
 	static {
 		double c = 1;
-		for (int i = 0; i <= BITS; i++) {
+		for (int i = 0; i < BITS; i++) {
 			CAPACITY[i] = (long) c;
 			c *= 1.5;
 		}
+		// the whole label space takes any count (more than 1.5^38 children only lose the amortized bound)
+		CAPACITY[BITS] = Long.MAX_VALUE;
 	}
 
 	private Object[] keys = new Object[16];
@@ -182,7 +184,7 @@ public final class M3ChildSlots {
 				hi++;
 			}
 			int count = hi - lo + 1;
-			if (level >= BITS || count <= CAPACITY[level]) {
+			if (count <= CAPACITY[level]) {
 				for (int j = 0; j < count; j++) {
 					labels[slotOf(children.get(lo + j))] = base + (j + 1) * size / (count + 1);
 				}

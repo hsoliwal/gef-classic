@@ -89,7 +89,9 @@ final class M3ChildQueries {
 		index.grid.query(clip.x, clip.y, clip.width, clip.height);
 		collect(M3FigureTrust.PAINT);
 		if (found.size() * PAINT_SHARE > index.slots.size()) {
-			fallback();
+			// over 1/PAINT_SHARE of the children meet the clip: the stock loop costs at most PAINT_SHARE x the painted
+			M3DeltaGate.widePaints++;
+			M3DeltaGate.paintedChildren += index.slots.size();
 			return false;
 		}
 		found.sortBy(index.slots.labels());
@@ -119,7 +121,7 @@ final class M3ChildQueries {
 		return true;
 	}
 
-	/** The stock loop paints: every child is asked. */
+	/** The stock loop paints under a clipping strategy: every child is asked. */
 	private void fallback() {
 		M3DeltaGate.fullPaints++;
 		M3DeltaGate.paintedChildren += index.slots.size();

@@ -29,8 +29,13 @@ public final class M3DeltaGate {
 	public static int fullLayouts;
 	/** XY layout passes that compared every constraint with its snapshot. */
 	public static int constraintSweeps;
-	/** Paints that fell back to the stock loop over every child (clipping strategy, wide clip). */
+	/** Paints that fell back to the stock loop over every child under a clipping strategy. */
 	public static int fullPaints;
+	/**
+	 * Paints left to the stock loop because more than a quarter of the children
+	 * meet the clip (at most four times the painted children; not full work).
+	 */
+	public static int widePaints;
 	/** Validation passes that visited every child (new index, invalidateTree). */
 	public static int fullValidations;
 	/** Z-order label range relabels (label gap used up; amortized O(log n) labels per insert). */
@@ -52,6 +57,7 @@ public final class M3DeltaGate {
 		fullLayouts = 0;
 		constraintSweeps = 0;
 		fullPaints = 0;
+		widePaints = 0;
 		fullValidations = 0;
 		relabels = 0;
 		relabeledLabels = 0;
@@ -63,6 +69,7 @@ public final class M3DeltaGate {
 	/** The counters as {@code name=value} pairs. */
 	public static String summary() {
 		return "fullLayouts=" + fullLayouts + " constraintSweeps=" + constraintSweeps + " fullPaints=" + fullPaints //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				+ " widePaints=" + widePaints //$NON-NLS-1$
 				+ " fullValidations=" + fullValidations + " relabels=" + relabels + "/" + relabeledLabels + " indexBuilds=" + indexBuilds //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 				+ " paintedChildren=" + paintedChildren + " validatedChildren=" + validatedChildren; //$NON-NLS-1$ //$NON-NLS-2$
 	}

@@ -123,5 +123,27 @@ public final class M3AllocBench {
 			d.viewport.setViewLocation((scroll[0] += 37) % 900, (scroll[0] * 3) % 700);
 			d.manager.flush();
 		});
+		// z-order inserts at one spot (send to back, behind the first node): label gaps run out there
+		Rectangle spot = new Rectangle(5000, 5000, 10, 10);
+		int inserts = 4000;
+		long[] t = new long[inserts];
+		long tid = Thread.currentThread().getId();
+		long bytes = THREADS.getThreadAllocatedBytes(tid);
+		for (int i = 0; i < inserts; i++) {
+			long s0 = System.nanoTime();
+			d.layer.add(new org.eclipse.draw2d.RectangleFigure(), spot, 1);
+			d.manager.flush();
+			t[i] = System.nanoTime() - s0;
+		}
+		bytes = THREADS.getThreadAllocatedBytes(tid) - bytes;
+		long sum = 0;
+		for (long v : t) {
+			sum += v;
+		}
+		Arrays.sort(t);
+		out.append(label).append('\t').append(nodes).append("\tinsert-at-1+update (mean of 4000)\t") //$NON-NLS-1$
+				.append(sum / inserts).append('\t').append(bytes / inserts).append('\n');
+		out.append(label).append('\t').append(nodes).append("\tinsert-at-1+update (p99 of 4000)\t") //$NON-NLS-1$
+				.append(t[inserts * 99 / 100]).append("\t-\n"); //$NON-NLS-1$
 	}
 }

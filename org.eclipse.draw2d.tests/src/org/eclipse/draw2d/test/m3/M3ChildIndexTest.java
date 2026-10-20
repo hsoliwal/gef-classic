@@ -39,6 +39,7 @@ import org.eclipse.draw2d.Layer;
 import org.eclipse.draw2d.TreeSearch;
 import org.eclipse.draw2d.XYLayout;
 import org.eclipse.draw2d.geometry.Rectangle;
+import org.eclipse.draw2d.internal.m3.M3DeltaGate;
 import org.eclipse.draw2d.internal.m3.M3FigureChildren;
 import org.eclipse.draw2d.internal.m3.M3FigureTrust;
 import org.eclipse.draw2d.internal.m3.M3ViewportMode;
@@ -269,6 +270,116 @@ public class M3ChildIndexTest {
 		layer.setLayoutManager(subclass);
 		layer.validate();
 		assertEquals(new Rectangle(8, 9, 3, 4), first.getBounds());
+	}
+
+	/** A layer whose class overrides revalidate: every invalidation counts as direct. */
+	static final class RevalidatingLayer extends Layer {
+		@Override
+		public void revalidate() {
+			super.revalidate();
+		}
+	}
+
+	/** A figure whose bounds are always asked (overrides setBounds). */
+	static final class LiveBounds extends Figure {
+		@Override
+		public void setBounds(Rectangle rect) {
+			super.setBounds(rect);
+		}
+	}
+
+	private static Layer layer(Layer layer, int nodes) {
+		layer.setLayoutManager(new XYLayout());
+		layer.setBounds(new Rectangle(0, 0, 4000, 4000));
+		for (int i = 0; i < nodes; i++) {
+			layer.add(new Figure(), new Rectangle((i % 20) * 50, (i / 20) * 40, 40, 30));
+		}
+		layer.validate();
+		return layer;
+	}
+
+	/** Moves child 3 by setConstraint, validates, and returns the constraint sweeps it caused. */
+	private static int sweepsForOneMove(Layer layer) {
+		M3DeltaGate.reset();
+		IFigure child = layer.getChildren().get(3);
+		layer.setConstraint(child, child.getBounds().getTranslated(3, 0));
+		layer.validate();
+		return M3DeltaGate.constraintSweeps;
+	}
+
+	@Test
+	public void attributionNeedsStockInvalidationAndNoLayoutListeners() {
+		assumeViewport();
+		assumeTrue(M3ViewportMode.CONSTRAINTS == M3ViewportMode.ATTRIBUTED);
+		Layer plain = layer(new Layer(), 80);
+		assertEquals(0, sweepsForOneMove(plain));
+		assertEquals(0, M3DeltaGate.fullWork());
+		// a direct revalidate (as after changing a constraint in place) arms one sweep
+		M3DeltaGate.reset();
+		Rectangle c = (Rectangle) plain.getLayoutManager().getConstraint(plain.getChildren().get(5));
+		c.translate(2, 0);
+		plain.revalidate();
+		plain.validate();
+		assertEquals(1, M3DeltaGate.constraintSweeps);
+		assertEquals(c.x, plain.getChildren().get(5).getBounds().x);
+		// a class overriding revalidate: attribution off
+		Layer overriding = layer(new RevalidatingLayer(), 80);
+		assertTrue(sweepsForOneMove(overriding) > 0);
+		// layout listeners may change constraints: attribution off while one is attached
+		plain.addLayoutListener(new org.eclipse.draw2d.LayoutListener.Stub());
+		assertTrue(sweepsForOneMove(plain) > 0);
+	}
+
+	@Test
+	public void directInvalidationWithoutLayoutPlanAndDuringALayoutPass() {
+		assumeViewport();
+		assumeTrue(M3ViewportMode.CONSTRAINTS == M3ViewportMode.ATTRIBUTED);
+		Figure free = new Figure();
+		free.setBounds(new Rectangle(0, 0, 900, 900));
+		for (int i = 0; i < 70; i++) {
+			Figure f = new Figure();
+			f.setBounds(new Rectangle(i * 10, i * 10, 8, 8));
+			free.add(f);
+		}
+		free.validate();
+		assertNotNull(free.findFigureAt(5, 5));
+		free.revalidate();
+		free.validate();
+		// a figure listener that changes a later constraint in place and revalidates the container mid-pass
+		Layer layer = layer(new Layer(), 80);
+		IFigure early = layer.getChildren().get(1);
+		IFigure late = layer.getChildren().get(60);
+		Rectangle lateConstraint = (Rectangle) layer.getLayoutManager().getConstraint(late);
+		boolean[] once = { true };
+		early.addFigureListener(source -> {
+			if (once[0]) {
+				once[0] = false;
+				lateConstraint.translate(0, 5);
+				layer.revalidate();
+			}
+		});
+		M3DeltaGate.reset();
+		layer.setConstraint(early, early.getBounds().getTranslated(1, 0));
+		layer.validate();
+		assertEquals(lateConstraint.y, late.getBounds().y);
+		assertTrue(M3DeltaGate.constraintSweeps > 0);
+	}
+
+	@Test
+	public void freeformExtentOfLiveChildrenOnlyAndOriginChangesInY() {
+		assumeViewport();
+		FreeformLayer free = new FreeformLayer();
+		free.setLayoutManager(new FreeformLayout());
+		for (int i = 0; i < 70; i++) {
+			free.add(new LiveBounds(), new Rectangle(i * 3, i * 2, 10, 10));
+		}
+		free.validate();
+		assertEquals(new Rectangle(0, 0, 217, 148), free.getFreeformExtent());
+		Layer layer = layer(80);
+		IFigure first = layer.getChildren().get(0);
+		layer.setBorder(new org.eclipse.draw2d.MarginBorder(new org.eclipse.draw2d.geometry.Insets(9, 0, 0, 0)));
+		layer.validate();
+		assertEquals(new Rectangle(0, 9, 40, 30), first.getBounds());
 	}
 
 	@Test

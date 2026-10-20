@@ -55,7 +55,8 @@ public class M3ViewportDifferentialTest {
 
 	/** Same, with the verify switch chosen. */
 	static ClassLoader loader(String build, String mode, boolean trust, boolean verify) throws Exception {
-		return loader(build, mode, trust ? "trusted" : "attributed", verify, null); //$NON-NLS-1$ //$NON-NLS-2$
+		// trust: the documented alias -Ddraw2d.viewport.trustConstraints=true
+		return loader(build, mode, trust ? null : "attributed", verify, null, trust); //$NON-NLS-1$
 	}
 
 	/**
@@ -64,6 +65,12 @@ public class M3ViewportDifferentialTest {
 	 */
 	static ClassLoader loader(String build, String mode, String constraints, boolean verify, String minChildren)
 			throws Exception {
+		return loader(build, mode, constraints, verify, minChildren, false);
+	}
+
+	/** Same; {@code trustAlias} sets -Ddraw2d.viewport.trustConstraints=true ({@code constraints} null: unset). */
+	static ClassLoader loader(String build, String mode, String constraints, boolean verify, String minChildren,
+			boolean trustAlias) throws Exception {
 		URLClassLoader swt = new URLClassLoader(new URL[] { url("m3.swt.jar") }, //$NON-NLS-1$
 				ClassLoader.getPlatformClassLoader());
 		URLClassLoader loader = new URLClassLoader(new URL[] { url(build), url("m3.draw2d.tests") }, swt); //$NON-NLS-1$
@@ -76,8 +83,12 @@ public class M3ViewportDifferentialTest {
 			}
 			System.setProperty("draw2d.viewport.mode", mode); //$NON-NLS-1$
 			System.setProperty("draw2d.viewport.verify", Boolean.toString(verify)); //$NON-NLS-1$
-			System.clearProperty("draw2d.viewport.trustConstraints"); //$NON-NLS-1$
-			System.setProperty("draw2d.viewport.constraints", constraints); //$NON-NLS-1$
+			System.setProperty("draw2d.viewport.trustConstraints", Boolean.toString(trustAlias)); //$NON-NLS-1$
+			if (constraints == null) {
+				System.clearProperty("draw2d.viewport.constraints"); //$NON-NLS-1$
+			} else {
+				System.setProperty("draw2d.viewport.constraints", constraints); //$NON-NLS-1$
+			}
 			if (minChildren == null) {
 				System.clearProperty("draw2d.viewport.minChildren"); //$NON-NLS-1$
 			} else {
