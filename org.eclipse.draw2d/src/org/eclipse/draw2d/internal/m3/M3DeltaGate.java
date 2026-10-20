@@ -48,6 +48,12 @@ public final class M3DeltaGate {
 	public static long paintedChildren;
 	/** Children validated through an index (per-step validation work). */
 	public static long validatedChildren;
+	/** Update requests deferred because the canvas was hidden. */
+	public static int deferredUpdates;
+	/** Repairs skipped because the canvas was hidden (explicit performUpdate). */
+	public static int deferredRepairs;
+	/** Repairs dropped after a show (the window system paints the whole canvas). */
+	public static int droppedRepairs;
 
 	private M3DeltaGate() {
 	}
@@ -64,6 +70,9 @@ public final class M3DeltaGate {
 		indexBuilds = 0;
 		paintedChildren = 0;
 		validatedChildren = 0;
+		deferredUpdates = 0;
+		deferredRepairs = 0;
+		droppedRepairs = 0;
 	}
 
 	/** The counters as {@code name=value} pairs. */

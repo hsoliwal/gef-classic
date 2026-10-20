@@ -18,6 +18,7 @@ recipeList:
   - com.synexia.openrewrite.viewport.Draw2dViewportLayer
   - com.synexia.openrewrite.viewport.Draw2dViewportLayouts
   - com.synexia.openrewrite.viewport.Draw2dViewportFreeform
+  - com.synexia.openrewrite.viewport.Draw2dViewportHidden
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: com.synexia.openrewrite.viewport.Draw2dViewportFigure
@@ -186,3 +187,42 @@ recipeList:
       anchor: "host.getParent().revalidate();"
       position: BEFORE
       statements: "\t\t\tif (host.getParent() instanceof Figure p && p.m3Children != null) {\n\t\t\t\tp.m3Children.explain();\n\t\t\t}"
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.synexia.openrewrite.viewport.Draw2dViewportHidden
+displayName: Hidden viewports defer validation and paint
+description: >-
+  Brief rule 24 (hidden viewports): while the canvas is hidden the deferred update does nothing and dirty regions
+  accumulate; on show the window system paints once and the regions dirtied while hidden are dropped.
+recipeList:
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager$UpdateRequest]
+      methodName: run
+      parameterCount: 0
+      position: METHOD_START
+      statements: "\t\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t\t&& org.eclipse.draw2d.internal.m3.M3Visibility.defer(DeferredUpdateManager.this)) {\n\t\t\t\tupdateQueued = false;\n\t\t\t\treturn;\n\t\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager]
+      methodName: repairDamage
+      parameterCount: 0
+      position: METHOD_START
+      statements: "\t\tint m3 = org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t? org.eclipse.draw2d.internal.m3.M3Visibility.repair(this)\n\t\t\t\t: org.eclipse.draw2d.internal.m3.M3Visibility.PAINT;\n\t\tif (m3 != org.eclipse.draw2d.internal.m3.M3Visibility.PAINT) {\n\t\t\tif (m3 == org.eclipse.draw2d.internal.m3.M3Visibility.DROP) {\n\t\t\t\tdirtyRegions.clear();\n\t\t\t}\n\t\t\treturn;\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.DeferredUpdateManager]
+      methodName: paint
+      parameterCount: 1
+      anchor: "graphics.dispose();"
+      position: AFTER
+      statements: "\t\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED\n\t\t\t\t\t&& org.eclipse.draw2d.internal.m3.M3Visibility.painted(this)\n\t\t\t\t\t&& new Rectangle(gc.getClipping()).contains(root.getBounds())) {\n\t\t\t\tdirtyRegions.clear();\n\t\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.LightweightSystem]
+      methodName: setControl
+      parameterCount: 1
+      position: METHOD_END
+      statements: "\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED) {\n\t\t\torg.eclipse.draw2d.internal.m3.M3Visibility.register(getUpdateManager(), canvas);\n\t\t}"
+  - com.synexia.openrewrite.viewport.M3InsertStatements:
+      declaringClasses: [org.eclipse.draw2d.LightweightSystem]
+      methodName: setUpdateManager
+      parameterCount: 1
+      position: METHOD_END
+      statements: "\t\tif (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED && canvas != null) {\n\t\t\torg.eclipse.draw2d.internal.m3.M3Visibility.register(manager, canvas);\n\t\t}"

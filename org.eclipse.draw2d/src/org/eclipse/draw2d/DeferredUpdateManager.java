@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (hidden viewports)
  *******************************************************************************/
 package org.eclipse.draw2d;
 
@@ -43,6 +44,11 @@ public class DeferredUpdateManager extends UpdateManager {
 		 */
 		@Override
 		public void run() {
+			if (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED
+					&& org.eclipse.draw2d.internal.m3.M3Visibility.defer(DeferredUpdateManager.this)) {
+				updateQueued = false;
+				return;
+			}
 			performUpdate();
 		}
 	}
@@ -151,6 +157,11 @@ public class DeferredUpdateManager extends UpdateManager {
 			performValidation();
 			root.paint(graphics);
 			graphics.dispose();
+			if (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED
+					&& org.eclipse.draw2d.internal.m3.M3Visibility.painted(this)
+					&& new Rectangle(gc.getClipping()).contains(root.getBounds())) {
+				dirtyRegions.clear();
+			}
 		} else {
 			/*
 			 * If figures are being validated then we can simply add a dirty region here and
@@ -270,6 +281,15 @@ public class DeferredUpdateManager extends UpdateManager {
 	 * regions.
 	 */
 	protected void repairDamage() {
+		int m3 = org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED
+				? org.eclipse.draw2d.internal.m3.M3Visibility.repair(this)
+				: org.eclipse.draw2d.internal.m3.M3Visibility.PAINT;
+		if (m3 != org.eclipse.draw2d.internal.m3.M3Visibility.PAINT) {
+			if (m3 == org.eclipse.draw2d.internal.m3.M3Visibility.DROP) {
+				dirtyRegions.clear();
+			}
+			return;
+		}
 		// Any regions marked dirty while calculating
 		// the damage are processed in the next cycle
 		Map<IFigure, Rectangle> oldRegions = dirtyRegions;

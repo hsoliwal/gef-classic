@@ -11,7 +11,8 @@ C=K:/m3-work/syn-recipes/synexia-openrewrite-recipes/crates/m3-viewport-catalogu
 JH="C:/Program Files/Java/jdk-21"
 CPR="$W/docs/m3/gef-viewport/recipe;$C/target/classes;$(cat $C/target/cp.txt)"
 D=$W/org.eclipse.draw2d/src/org/eclipse/draw2d
-FILES="$D/Figure.java $D/Layer.java $D/XYLayout.java $D/AbstractConstraintLayout.java $D/FreeformHelper.java"
+FILES="$D/Figure.java $D/Layer.java $D/XYLayout.java $D/AbstractConstraintLayout.java $D/FreeformHelper.java
+	$D/DeferredUpdateManager.java $D/LightweightSystem.java"
 mkdir -p S:/m3-scratch/tmp
 for pass in 1 2; do
 	echo "recipe pass $pass:"

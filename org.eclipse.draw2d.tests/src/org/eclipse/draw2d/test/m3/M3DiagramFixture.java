@@ -76,6 +76,11 @@ public class M3DiagramFixture {
 			// the caller runs performUpdate()
 		}
 
+		/** Runs one deferred update request, as the display would run the posted one. */
+		public void requestUpdate() {
+			new UpdateRequest().run();
+		}
+
 		/** Runs the pending validation and repair; {@link #last} is the repair's graphics or null. */
 		public void flush() {
 			last = null;

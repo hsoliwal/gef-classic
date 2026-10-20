@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (hidden viewports)
  *******************************************************************************/
 package org.eclipse.draw2d;
 
@@ -275,6 +276,9 @@ public class LightweightSystem {
 		r.setLocation(0, 0);
 		root.setBounds(r);
 		root.revalidate();
+		if (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED) {
+			org.eclipse.draw2d.internal.m3.M3Visibility.register(getUpdateManager(), canvas);
+		}
 	}
 
 	/**
@@ -316,6 +320,9 @@ public class LightweightSystem {
 	public void setUpdateManager(UpdateManager um) {
 		manager = um;
 		manager.setRoot(root);
+		if (org.eclipse.draw2d.internal.m3.M3ViewportMode.ENABLED && canvas != null) {
+			org.eclipse.draw2d.internal.m3.M3Visibility.register(manager, canvas);
+		}
 	}
 
 	/**
