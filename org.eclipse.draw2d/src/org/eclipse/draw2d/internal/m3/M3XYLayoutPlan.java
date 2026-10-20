@@ -33,7 +33,10 @@ import org.eclipse.draw2d.geometry.Rectangle;
  * place, children sized by their preferred size, and children whose classes
  * override setBounds. The origin, or the layout manager, changing makes the
  * next pass a full stock pass. Changed children are laid out in child-list
- * order with the stock calls.
+ * order with the stock calls. Constraints changed in place are found by a
+ * sweep over the snapshots on every pass ({@link M3ViewportMode#EXACT}), only
+ * after a direct revalidate of the host ({@link M3ViewportMode#ATTRIBUTED},
+ * the default), or never ({@link M3ViewportMode#TRUSTED}).
  */
 public final class M3XYLayoutPlan {
 

@@ -177,35 +177,48 @@ public class M3CollectionsTest {
 	public void labelsRelabelWhenGapsRunOut() throws Exception {
 		M3ChildSlots slots = new M3ChildSlots();
 		List<IFigure> children = new ArrayList<>();
-		for (int i = 0; i < 3; i++) {
-			children.add(new Figure());
-		}
-		for (IFigure f : children) {
-			slots.add(f, 0);
-		}
-		slots.relabel(children);
-		assertEquals(1, slots.relabels());
-		int inserted = 0;
-		long label;
-		do {
+		SplittableRandom r = new SplittableRandom(9);
+		long rewritten = 0;
+		int inserts = 0;
+		for (int step = 0; step < 30000; step++) {
 			IFigure f = new Figure();
-			children.add(1, f);
-			label = slots.labelAt(children, 1);
+			// front, a hot spot, the end, or anywhere: same-spot runs use up gaps fastest
+			int kind = r.nextInt(4);
+			int at = children.isEmpty() ? 0
+					: switch (kind) {
+					case 0 -> 0;
+					case 1 -> Math.min(children.size(), 7);
+					case 2 -> children.size();
+					default -> r.nextInt(children.size() + 1);
+					};
+			children.add(at, f);
+			long label = children.size() == 1 ? 1024 : slots.labelAt(children, at);
 			slots.add(f, Math.max(label, 0));
-			inserted++;
-		} while (label >= 0);
-		assertTrue(inserted > 5);
-		slots.relabel(children);
+			if (label < 0) {
+				rewritten += slots.relabelAround(children, at);
+			}
+			inserts++;
+			if (step % 1000 == 999 || step < 200) {
+				long[] labels = slots.labels();
+				for (int i = 1; i < children.size(); i++) {
+					assertTrue(labels[slots.slotOf(children.get(i - 1))] < labels[slots.slotOf(children.get(i))],
+							"order at step " + step); //$NON-NLS-1$
+				}
+			}
+		}
+		assertTrue(slots.relabels() > 0);
+		// amortized: a whole-list relabel per used-up gap would rewrite ~n/2 labels per relabel
+		assertTrue(rewritten < 40L * inserts, "labels rewritten " + rewritten + " for " + inserts + " inserts"); //$NON-NLS-1$ //$NON-NLS-2$
+		IFigure last = new Figure();
+		children.add(last);
+		slots.labels()[slots.slotOf(children.get(children.size() - 2))] = (1L << 38) - 5;
+		assertEquals(-1, slots.labelAt(children, children.size() - 1));
+		slots.add(last, 0);
+		slots.relabelAround(children, children.size() - 1);
 		long[] labels = slots.labels();
 		for (int i = 1; i < children.size(); i++) {
 			assertTrue(labels[slots.slotOf(children.get(i - 1))] < labels[slots.slotOf(children.get(i))]);
 		}
-		IFigure last = new Figure();
-		children.add(last);
-		labels[slots.slotOf(children.get(children.size() - 2))] = (1L << 38) - 5;
-		assertEquals(-1, slots.labelAt(children, children.size() - 1));
-		children.add(0, new Figure());
-		assertTrue(slots.labelAt(children, 0) > 0);
 	}
 
 	@Test

@@ -23,8 +23,8 @@ import org.eclipse.draw2d.IFigure;
  * Slot registry of a container's children: an int slot per child (reused after
  * removal), an identity-keyed open-addressing table from figure to slot, and
  * an order label per slot that sorts like the child list (list labelling with
- * gaps: an append or insert takes a free label between its neighbours, and the
- * whole list is relabelled only when a gap is used up). Paint and hit-test
+ * gaps: an append or insert takes a free label between its neighbours; when a
+ * gap is used up, a range of neighbours is relabelled, {@link #relabelAround}). Paint and hit-test
  * candidates found by the spatial grid are put back in z-order by sorting
  * their labels.
  */
@@ -32,8 +32,20 @@ public final class M3ChildSlots {
 
 	/** Label distance between neighbours after a relabel. */
 	static final long GAP = 1L << 10;
+	/** Bits of a label. */
+	static final int BITS = 38;
 	/** Labels stay below this bound, so a label and a slot pack into one long. */
-	static final long LIMIT = 1L << 38;
+	static final long LIMIT = 1L << BITS;
+	/** Labels an aligned range of size 2^i may hold before it is relabelled: floor(1.5^i). */
+	private static final long[] CAPACITY = new long[BITS + 1];
+
+	static {
+		double c = 1;
+		for (int i = 0; i <= BITS; i++) {
+			CAPACITY[i] = (long) c;
+			c *= 1.5;
+		}
+	}
 
 	private Object[] keys = new Object[16];
 	private int[] values = new int[16];
@@ -130,8 +142,8 @@ public final class M3ChildSlots {
 
 	/**
 	 * Label for the child just placed at {@code index} of {@code children}: the
-	 * middle of the gap between its neighbours' labels; relabels the whole list
-	 * when the gap is used up. Every other child must be registered.
+	 * middle of the gap between its neighbours' labels, or -1 when the gap is
+	 * used up ({@link #relabelAround}). Every other child must be registered.
 	 */
 	public long labelAt(List<? extends IFigure> children, int index) {
 		long before = index == 0 ? 0 : labels[slotOf(children.get(index - 1))];
@@ -142,12 +154,41 @@ public final class M3ChildSlots {
 		return -1;
 	}
 
-	/** Gives every registered child of {@code children} the label (position + 1) * GAP. */
-	public void relabel(List<? extends IFigure> children) {
+	/**
+	 * Relabels the children around the child just placed at {@code index}
+	 * (registered with any label) when {@link #labelAt} found no free label:
+	 * the smallest aligned label range of size 2^i around its left neighbour's
+	 * label that holds at most T^i labels with the new child counted is
+	 * relabelled evenly (order maintenance by list labelling, Bender, Cole,
+	 * Demaine, Farach-Colton and Zito 2002, T = 1.5): amortized O(log n) labels
+	 * rewritten per insert instead of the whole list. Returns how many labels
+	 * were rewritten.
+	 */
+	public int relabelAround(List<? extends IFigure> children, int index) {
 		relabels++;
 		M3DeltaGate.relabels++;
-		for (int i = 0; i < children.size(); i++) {
-			labels[slotOf(children.get(i))] = (i + 1) * GAP;
+		int n = children.size();
+		long anchor = index > 0 ? labels[slotOf(children.get(index - 1))] : 0;
+		int lo = index;
+		int hi = index;
+		for (int level = 1;; level++) {
+			long size = 1L << level;
+			long base = anchor & -size;
+			long end = base + size;
+			while (lo > 0 && labels[slotOf(children.get(lo - 1))] >= base) {
+				lo--;
+			}
+			while (hi < n - 1 && labels[slotOf(children.get(hi + 1))] < end) {
+				hi++;
+			}
+			int count = hi - lo + 1;
+			if (level >= BITS || count <= CAPACITY[level]) {
+				for (int j = 0; j < count; j++) {
+					labels[slotOf(children.get(lo + j))] = base + (j + 1) * size / (count + 1);
+				}
+				M3DeltaGate.relabeledLabels += count;
+				return count;
+			}
 		}
 	}
 

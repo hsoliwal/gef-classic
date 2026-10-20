@@ -122,7 +122,7 @@ public final class M3FigureChildren {
 		long label = at > 0 || children.size() > 1 ? slots.labelAt(children, at) : M3ChildSlots.GAP;
 		register(child, Math.max(label, 0));
 		if (label < 0) {
-			slots.relabel(children);
+			slots.relabelAround(children, at);
 		}
 	}
 

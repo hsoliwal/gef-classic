@@ -107,9 +107,23 @@ Stock `XYLayout.layout` sets every child's bounds to its constraint; `Figure.set
 unchanged. The plan lays out, in list order with the stock calls, only children that were moved or added, whose
 constraint was replaced (`setConstraint` hook) or changed in place (snapshot compare), that are sized by preferred
 size (`-1`), or whose classes override `setBounds`. Origin or layout-manager changes, and subclasses of `XYLayout`
-other than `FreeformLayout`, take the full stock pass. The snapshot compare is an O(n) int sweep;
-`-Ddraw2d.viewport.trustConstraints=true` replaces it by an O(changed) worklist for code that only ever replaces
-constraints (`-Ddraw2d.viewport.verify=true` checks that promise).
+other than `FreeformLayout`, take the full stock pass. How the plan finds constraints changed in place is the
+constraint policy, `-Ddraw2d.viewport.constraints=`:
+
+| policy | a pass visits | O(...) per delta | differs from stock when |
+|---|---|---|---|
+| `exact` | every child whose constraint differs from its snapshot (int sweep over all slots) | O(n) | never |
+| `attributed` (default) | the changed children; the snapshot sweep only after a direct `revalidate`/`invalidate` of the container | O(changed) | a constraint changed in place is followed only by add, remove, `setConstraint`, a resize or a child revalidate of that container, never by a direct `revalidate` (stock then lays it out on the next unrelated pass; here it waits for a direct one) |
+| `trusted` (`trustConstraints=true`) | the changed children | O(changed) | any constraint is changed in place |
+
+Attribution: Figure announces (`M3FigureChildren.explain`) the `revalidate`/`invalidate` it makes itself in `add`,
+`remove`, `setConstraint`, a resize in `setBounds`, a child's `revalidate`, and `FreeformHelper.invalidate`, right
+before the call; `Figure.invalidate` of the container consumes the announcement. Any other invalidation (client
+code after an in-place change, `invalidateTree`, a border or layout-manager change) is direct and arms the sweep.
+Attribution is off (every invalidation direct) for containers whose class overrides `invalidate` or `revalidate`
+(trust bit `INVALIDATION`) and while the container has layout listeners (`LayoutNotifier`), whose callbacks may
+change constraints. `-Ddraw2d.viewport.verify=true` sweeps after every attributed or trusted pass and throws when
+the sweep finds more than the worklist.
 
 ### 3.5 Freeform extent (`M3FreeformExtent`)
 Stock: copy of the first child's rectangle, then the union of every nonempty one, after every child move. Here:
@@ -123,6 +137,9 @@ tree root. `setFreeformBounds` visits only the FreeformFigure children, in list 
 - If paint or validation modifies the parent's child list, stock's `ArrayList` iteration throws
   `ConcurrentModificationException` (or not, depending on position); the index throws it after the modifying child.
 - Fewer `Graphics.getClip` queries are made (queries only; no drawing operation differs).
+- Attributed policy (default): an XY constraint changed in place takes effect at the next direct `revalidate`
+  of its container, not at the next layout the container gets for another reason (table in 3.4); `exact`
+  restores the stock timing.
 
 ## 4. Proof
 
@@ -132,9 +149,15 @@ tree root. `setFreeformBounds` visits only the FreeformFigure children, in list 
   rectangles, mouse listeners, figure listeners): adds, removes, z-order changes, constraint replacement and
   in-place mutation, direct `setBounds`, visibility, enablement, preferred sizes, scroll, zoom, paint (graphics
   operation hash), the four hit tests, freeform extents, repairs (graphics operation hash and count), validate and
-  figure-moved events, and every node's final bounds. 24 seeds x 400 steps x 3 variants (viewport,
-  viewport+trustConstraints, original): identical. Verify mode is on in the M3 loader. Mutation check: reversing
+  figure-moved events, and every node's final bounds. 24 seeds x 400 steps x 5 variants (viewport attributed,
+  viewport exact, viewport trusted without in-place changes, viewport without verify, original): identical. Verify mode is on in the M3 loader. Mutation check: reversing
   the hit-test order fails at seed 1.
+- **Delta gate** (`DELTA_GATE.tsv`, `M3DeltaGate`): delta-only scripts (24 seeds x 400 steps of add, remove,
+  `setConstraint`, `setBounds`, visibility, enablement, z-order, preferred size, front bursts, emptying a
+  container, inside a fixed frame) match stock line for line, and from the first flush on the M3 build counts
+  zero full XY layouts, constraint sweeps, stock paint loops and full validations, and neither build adds a dirty
+  region covering a whole layer, pane, viewport or the root. Under the exact policy the same steps sweep
+  (`exactPolicySweepsOnDeltaSteps`), so the counters are live.
 - **Pixels** on the hidden desktop: next commit (`M3ViewportPixelUiTest`).
 - **Coverage:** `tools/test.sh` (JaCoCo); report in `coverage/`.
 

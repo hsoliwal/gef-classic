@@ -181,4 +181,64 @@ public class M3ViewportDifferentialTest {
 	public void originalModeMatchesStock() throws Exception {
 		differential("original", "original", false, true); //$NON-NLS-1$ //$NON-NLS-2$
 	}
+
+	@Test
+	public void viewportModeWithExactConstraintsMatchesStock() throws Exception {
+		ClassLoader stock = loader("m3.draw2d.stock", "original", false); //$NON-NLS-1$ //$NON-NLS-2$
+		ClassLoader m3 = loader("m3.draw2d.m3", "viewport", "exact", true, null); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		for (long seed = 1; seed <= SEEDS; seed++) {
+			int count = 70 + (int) (seed * 37 % 500);
+			compare("viewport+exact", run(stock, seed, count, true), run(m3, seed, count, true), seed); //$NON-NLS-1$
+		}
+	}
+
+	private static Object gateField(ClassLoader loader, String name) throws Exception {
+		return Class.forName("org.eclipse.draw2d.test.m3.M3Draw2dScript", true, loader).getDeclaredField(name) //$NON-NLS-1$
+				.get(null);
+	}
+
+	static String runDelta(ClassLoader loader, long seed, int count) throws Exception {
+		Class<?> script = Class.forName("org.eclipse.draw2d.test.m3.M3Draw2dScript", true, loader); //$NON-NLS-1$
+		return (String) script.getMethod("run", long.class, int.class, int.class, boolean.class, boolean.class) //$NON-NLS-1$
+				.invoke(null, Long.valueOf(seed), Integer.valueOf(count), Integer.valueOf(STEPS), Boolean.FALSE,
+						Boolean.TRUE);
+	}
+
+	/**
+	 * Delta gate (DELTA_GATE.tsv): delta-only scripts (no extent change, scroll,
+	 * zoom or direct container revalidate) match stock line for line, and from
+	 * the first flush on the M3 build does no work over all children of an
+	 * indexed container (no full XY layout, constraint sweep, stock paint loop or
+	 * full validation) and neither build repaints a whole layer, pane, viewport
+	 * or the root.
+	 */
+	@Test
+	public void deltaStepsDoNoWorkOverAllChildren() throws Exception {
+		ClassLoader stock = loader("m3.draw2d.stock", "original", false); //$NON-NLS-1$ //$NON-NLS-2$
+		ClassLoader m3 = loader("m3.draw2d.m3", "viewport", "attributed", true, "4"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		Logger log = Logger.getLogger(M3ViewportDifferentialTest.class.getName());
+		for (long seed = 1; seed <= SEEDS; seed++) {
+			int count = 70 + (int) (seed * 37 % 500);
+			String expected = runDelta(stock, seed, count);
+			int stockWhole = ((Integer) gateField(stock, "wholeRepaints")).intValue(); //$NON-NLS-1$
+			String actual = runDelta(m3, seed, count);
+			compare("viewport delta-only", expected, actual, seed); //$NON-NLS-1$
+			String summary = (String) gateField(m3, "gateSummary"); //$NON-NLS-1$
+			int fullWork = ((Integer) gateField(m3, "gateFullWork")).intValue(); //$NON-NLS-1$
+			int whole = ((Integer) gateField(m3, "wholeRepaints")).intValue(); //$NON-NLS-1$
+			log.info("delta gate seed " + seed + " nodes " + count + ": " + summary + " wholeRepaints=" + whole //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					+ " stockWholeRepaints=" + stockWhole); //$NON-NLS-1$
+			assertTrue(fullWork == 0 && whole == 0 && stockWhole == 0,
+					"seed " + seed + ": " + summary + " wholeRepaints=" + whole + " stock " + stockWhole); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		}
+	}
+
+	/** The gate is not vacuous: under the exact policy the same delta steps sweep every constraint. */
+	@Test
+	public void exactPolicySweepsOnDeltaSteps() throws Exception {
+		ClassLoader m3 = loader("m3.draw2d.m3", "viewport", "exact", true, "4"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		runDelta(m3, 3, 200);
+		assertTrue(((Integer) gateField(m3, "gateSweeps")).intValue() > 0, //$NON-NLS-1$
+				(String) gateField(m3, "gateSummary")); //$NON-NLS-1$
+	}
 }

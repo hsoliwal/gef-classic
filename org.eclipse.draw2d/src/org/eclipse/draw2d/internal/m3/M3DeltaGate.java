@@ -33,8 +33,10 @@ public final class M3DeltaGate {
 	public static int fullPaints;
 	/** Validation passes that visited every child (new index, invalidateTree). */
 	public static int fullValidations;
-	/** Z-order relabels of every child (label gaps exhausted; amortized O(1) per insert). */
+	/** Z-order label range relabels (label gap used up; amortized O(log n) labels per insert). */
 	public static int relabels;
+	/** Labels rewritten by those relabels. */
+	public static long relabeledLabels;
 	/** Child indexes built (O(children) once per container). */
 	public static int indexBuilds;
 	/** Children painted through an index (per-step paint work; the stock fallback adds every child). */
@@ -52,6 +54,7 @@ public final class M3DeltaGate {
 		fullPaints = 0;
 		fullValidations = 0;
 		relabels = 0;
+		relabeledLabels = 0;
 		indexBuilds = 0;
 		paintedChildren = 0;
 		validatedChildren = 0;
@@ -60,7 +63,7 @@ public final class M3DeltaGate {
 	/** The counters as {@code name=value} pairs. */
 	public static String summary() {
 		return "fullLayouts=" + fullLayouts + " constraintSweeps=" + constraintSweeps + " fullPaints=" + fullPaints //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				+ " fullValidations=" + fullValidations + " relabels=" + relabels + " indexBuilds=" + indexBuilds //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				+ " fullValidations=" + fullValidations + " relabels=" + relabels + "/" + relabeledLabels + " indexBuilds=" + indexBuilds //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 				+ " paintedChildren=" + paintedChildren + " validatedChildren=" + validatedChildren; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 

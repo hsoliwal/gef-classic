@@ -83,13 +83,13 @@ public final class M3Draw2dScript {
 	private final boolean mutateInPlace;
 	private final boolean deltaOnly;
 	/** {@code M3DeltaGate.summary()} after the last run (M3 build only, else "-"). */
-	static String gateSummary = "-"; //$NON-NLS-1$
+	public static String gateSummary = "-"; //$NON-NLS-1$
 	/** {@code M3DeltaGate.fullWork()} after the last run (M3 build only, else 0). */
-	static int gateFullWork;
+	public static int gateFullWork;
 	/** Constraint sweeps after the last run (M3 build only, else 0). */
-	static int gateSweeps;
+	public static int gateSweeps;
 	/** Whole-container dirty regions of the last run, counted from the reset on. */
-	static int wholeRepaints;
+	public static int wholeRepaints;
 	private final M3DiagramFixture d;
 	private final Layer second = new Layer();
 	private final Layer third = new Layer();
@@ -345,8 +345,9 @@ public final class M3Draw2dScript {
 		if (f == null && op < 8) {
 			op = 0;
 		}
-		if (deltaOnly && (op == 3 || op == 9 || op == 10)) {
-			// in-place constraint changes revalidate the container directly; scroll and zoom are viewport deltas
+		if (deltaOnly && (op == 3 || op == 9 || op == 10 || op == 15)) {
+			// in-place constraint changes revalidate the container directly; scroll and zoom are viewport
+			// deltas; emptying a container and refilling it is a clear-and-re-add
 			op = op == 3 ? 2 : 16;
 		}
 		switch (op) {
@@ -388,7 +389,7 @@ public final class M3Draw2dScript {
 		case 11 -> paint();
 		case 12, 13 -> hits();
 		case 14 -> log("extent " + d.layer.getFreeformExtent() + ' ' + d.pane.getFreeformExtent()); //$NON-NLS-1$
-		case 15 -> refill(new IFigure[] { second, deltaOnly ? inner : third, inner }[random.nextInt(3)]);
+		case 15 -> refill(new IFigure[] { second, third, inner }[random.nextInt(3)]);
 		case 18 -> burst();
 		default -> flush();
 		}
