@@ -53,7 +53,7 @@ public final class M3ChildValidation {
 	}
 
 	private boolean flagged(int slot) {
-		return slot >>> 6 < invalid.length && (invalid[slot >>> 6] & (1L << slot)) != 0;
+		return (invalid[slot >>> 6] & (1L << slot)) != 0;
 	}
 
 	private void mark(int slot) {
@@ -74,7 +74,6 @@ public final class M3ChildValidation {
 	}
 
 	void added(int slot) {
-		unmark(slot);
 		mark(slot);
 	}
 
@@ -97,7 +96,7 @@ public final class M3ChildValidation {
 		int kept = 0;
 		for (int i = 0; i < pending.size(); i++) {
 			int s = pending.get(i);
-			if (flagged(s) && index.slots.figure(s) != null) {
+			if (flagged(s)) {
 				pending.set(kept++, s);
 				if (labels[s] > cursor && (index.slots.trust(s) & M3FigureTrust.VALIDATE) != 0) {
 					visit.add(s);

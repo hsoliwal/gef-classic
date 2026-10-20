@@ -74,7 +74,7 @@ public final class M3IntList {
 		boolean small = true;
 		for (int i = 0; i < size; i++) {
 			long k = keys[values[i]];
-			small &= k >= 0 && k < (1L << 39) && values[i] < (1 << 24);
+			small &= ((k >>> 39) | (values[i] >>> 24)) == 0;
 			packed[i] = (k << 24) | values[i];
 		}
 		if (small) {

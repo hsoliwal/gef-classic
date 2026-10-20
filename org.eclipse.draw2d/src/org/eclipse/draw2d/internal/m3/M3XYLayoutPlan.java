@@ -61,6 +61,7 @@ public final class M3XYLayoutPlan {
 
 	M3XYLayoutPlan(M3FigureChildren index) {
 		this.index = index;
+		ensure(Math.max(0, index.slots.slotLimit() - 1));
 	}
 
 	/** Children laid out by the last pass (for tests and benchmarks). */
@@ -83,7 +84,7 @@ public final class M3XYLayoutPlan {
 	}
 
 	private boolean isDirty(int slot) {
-		return slot >>> 6 < dirty.length && (dirty[slot >>> 6] & (1L << slot)) != 0;
+		return (dirty[slot >>> 6] & (1L << slot)) != 0;
 	}
 
 	/** Marks the slot for the next pass. */
@@ -251,17 +252,14 @@ public final class M3XYLayoutPlan {
 	/** The body of the stock loop for one child, recording what it applied. */
 	private void apply(XYLayout layout, IFigure f, int slot, Point offset) {
 		Rectangle bounds = (Rectangle) layout.getConstraint(f);
-		if (slot >= 0) {
-			ensure(slot);
-			ref[slot] = bounds;
-			if (bounds != null) {
-				cx[slot] = bounds.x;
-				cy[slot] = bounds.y;
-				cw[slot] = bounds.width;
-				ch[slot] = bounds.height;
-				if (bounds.width == -1 || bounds.height == -1) {
-					prefList.add(slot);
-				}
+		ref[slot] = bounds;
+		if (bounds != null) {
+			cx[slot] = bounds.x;
+			cy[slot] = bounds.y;
+			cw[slot] = bounds.width;
+			ch[slot] = bounds.height;
+			if (bounds.width == -1 || bounds.height == -1) {
+				prefList.add(slot);
 			}
 		}
 		if (bounds == null) {
@@ -290,8 +288,6 @@ public final class M3XYLayoutPlan {
 	}
 
 	private void clear(int slot) {
-		if (slot >= 0) {
-			dirty[slot >>> 6] &= ~(1L << slot);
-		}
+		dirty[slot >>> 6] &= ~(1L << slot);
 	}
 }

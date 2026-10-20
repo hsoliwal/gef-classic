@@ -67,6 +67,8 @@ public class M3CollectionsTest {
 		case 2 -> new int[] { r.nextInt(500), r.nextInt(500), 5, -3 };
 		case 3 -> new int[] { -r.nextInt(4000), -r.nextInt(4000), 3000 + r.nextInt(3000), 2000 };
 		case 4 -> new int[] { Integer.MIN_VALUE + r.nextInt(20), 5, -30, 10 };
+		case 5 -> new int[] { r.nextInt(500), Integer.MAX_VALUE - r.nextInt(40), 30, 90 };
+		case 6 -> new int[] { Integer.MAX_VALUE - 5, r.nextInt(500), 100, 0 };
 		default -> new int[] { r.nextInt(3000) - 500, r.nextInt(3000) - 500, 1 + r.nextInt(90), 1 + r.nextInt(70) };
 		};
 	}
@@ -94,6 +96,9 @@ public class M3CollectionsTest {
 			if (r.nextInt(25) == 0) {
 				qx = Integer.MAX_VALUE - 30;
 				qw = 100;
+			} else if (r.nextInt(25) == 0) {
+				qy = Integer.MAX_VALUE - 30;
+				qh = 100;
 			}
 			grid.query(qx, qy, qw, qh);
 			M3IntList want = new M3IntList();

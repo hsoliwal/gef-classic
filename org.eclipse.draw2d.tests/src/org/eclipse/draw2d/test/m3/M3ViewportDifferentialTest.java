@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.draw2d.test.m3;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -21,6 +23,8 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +50,11 @@ public class M3ViewportDifferentialTest {
 
 	/** A loader over one Draw2d build and the script, with the M3 mode switches set while it initializes. */
 	static ClassLoader loader(String build, String mode, boolean trust) throws Exception {
+		return loader(build, mode, trust, true);
+	}
+
+	/** Same, with the verify switch chosen. */
+	static ClassLoader loader(String build, String mode, boolean trust, boolean verify) throws Exception {
 		URLClassLoader swt = new URLClassLoader(new URL[] { url("m3.swt.jar") }, //$NON-NLS-1$
 				ClassLoader.getPlatformClassLoader());
 		URLClassLoader loader = new URLClassLoader(new URL[] { url(build), url("m3.draw2d.tests") }, swt); //$NON-NLS-1$
@@ -56,7 +65,7 @@ public class M3ViewportDifferentialTest {
 				saved[i] = System.getProperty(keys[i]);
 			}
 			System.setProperty("draw2d.viewport.mode", mode); //$NON-NLS-1$
-			System.setProperty("draw2d.viewport.verify", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+			System.setProperty("draw2d.viewport.verify", Boolean.toString(verify)); //$NON-NLS-1$
 			System.setProperty("draw2d.viewport.trustConstraints", Boolean.toString(trust)); //$NON-NLS-1$
 			try {
 				Class.forName("org.eclipse.draw2d.internal.m3.M3ViewportMode", true, loader); //$NON-NLS-1$
@@ -100,8 +109,13 @@ public class M3ViewportDifferentialTest {
 	}
 
 	private static void differential(String variant, String mode, boolean trust, boolean mutate) throws Exception {
+		differential(variant, mode, trust, mutate, true);
+	}
+
+	private static void differential(String variant, String mode, boolean trust, boolean mutate, boolean verify)
+			throws Exception {
 		ClassLoader stock = loader("m3.draw2d.stock", "original", false); //$NON-NLS-1$ //$NON-NLS-2$
-		ClassLoader m3 = loader("m3.draw2d.m3", mode, trust); //$NON-NLS-1$
+		ClassLoader m3 = loader("m3.draw2d.m3", mode, trust, verify); //$NON-NLS-1$
 		for (long seed = 1; seed <= SEEDS; seed++) {
 			int count = 70 + (int) (seed * 37 % 500);
 			compare(variant, run(stock, seed, count, mutate), run(m3, seed, count, mutate), seed);
@@ -116,6 +130,35 @@ public class M3ViewportDifferentialTest {
 	@Test
 	public void viewportModeWithTrustedConstraintsMatchesStock() throws Exception {
 		differential("viewport+trustConstraints", "viewport", true, false); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void viewportModeWithoutVerifyMatchesStock() throws Exception {
+		differential("viewport, no verify", "viewport", false, true, false); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void verifyCatchesInPlaceMutationUnderTrustedConstraints() throws Exception {
+		ClassLoader m3 = loader("m3.draw2d.m3", "viewport", true, true); //$NON-NLS-1$ //$NON-NLS-2$
+		boolean caught = false;
+		for (long seed = 1; seed <= 4 && !caught; seed++) {
+			caught = run(m3, seed, 300, true).contains("error java.lang.IllegalStateException"); //$NON-NLS-1$
+		}
+		assertTrue(caught, "verify mode must reject in-place constraint changes when trustConstraints is set"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void originalModeLogsItsSelectionAtFine() throws Exception {
+		Logger log = Logger.getLogger("org.eclipse.draw2d.internal.m3"); //$NON-NLS-1$
+		Level level = log.getLevel();
+		log.setLevel(Level.FINE);
+		try {
+			ClassLoader original = loader("m3.draw2d.m3", "original", false, false); //$NON-NLS-1$ //$NON-NLS-2$
+			assertFalse(Class.forName("org.eclipse.draw2d.internal.m3.M3ViewportMode", true, original) //$NON-NLS-1$
+					.getField("ENABLED").getBoolean(null)); //$NON-NLS-1$
+		} finally {
+			log.setLevel(level);
+		}
 	}
 
 	@Test

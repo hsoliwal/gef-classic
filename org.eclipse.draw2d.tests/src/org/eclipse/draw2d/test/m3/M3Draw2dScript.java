@@ -206,6 +206,12 @@ public final class M3Draw2dScript {
 		if (kind == 3) {
 			return new Rectangle(Integer.MAX_VALUE - random.nextInt(50), random.nextInt(1500), 100, 20);
 		}
+		if (kind == 4) {
+			return new Rectangle(random.nextInt(2000), random.nextInt(1500), -1, 5 + random.nextInt(20));
+		}
+		if (kind == 5) {
+			return new Rectangle(random.nextInt(2000), random.nextInt(1500), 5 + random.nextInt(20), -1);
+		}
 		return new Rectangle(random.nextInt(2000), random.nextInt(1500), 4 + random.nextInt(60), 4 + random.nextInt(40));
 	}
 
@@ -275,7 +281,11 @@ public final class M3Draw2dScript {
 		case 3 -> {
 			Object c = f.getParent().getLayoutManager().getConstraint(f);
 			if (mutateInPlace && c instanceof Rectangle r) {
-				r.translate(random.nextInt(21) - 10, random.nextInt(21) - 10);
+				if (random.nextBoolean()) {
+					r.translate(random.nextInt(21) - 10, random.nextInt(21) - 10);
+				} else {
+					r.resize(random.nextInt(9) - 4, random.nextInt(9) - 4);
+				}
 				f.getParent().revalidate();
 			}
 		}

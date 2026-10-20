@@ -168,6 +168,111 @@ public class M3ChildIndexTest {
 		IFigure other = layer.getChildren().get(6);
 		other.getBounds().x += 2;
 		assertThrows(IllegalStateException.class, () -> layer.findFigureAt(other.getBounds().x - 1, 5));
+		other.getBounds().x -= 2;
+		// a child moved onto the point behind the index's back: the index misses it
+		IFigure far = layer.getChildren().get(99);
+		far.getBounds().setLocation(3000, 3000);
+		assertThrows(IllegalStateException.class, () -> layer.findFigureAt(3001, 3001));
+		IFigure last = layer.getChildren().get(98);
+		last.getBounds().setLocation(3500, 3500);
+		assertThrows(IllegalStateException.class, () -> layer.findFigureAt(3501, 3501));
+	}
+
+	static final class PrimTranslateOverride extends Figure {
+		@Override
+		protected void primTranslate(int dx, int dy) {
+			super.primTranslate(dx, dy);
+		}
+	}
+
+	static final class FireMovedOverride extends Figure {
+		@Override
+		protected void fireFigureMoved() {
+			super.fireFigureMoved();
+		}
+	}
+
+	static final class FlagOverride extends Figure {
+		@Override
+		protected boolean getFlag(int flag) {
+			return super.getFlag(flag);
+		}
+	}
+
+	static final class SetValidOverride extends Figure {
+		@Override
+		public void setValid(boolean value) {
+			super.setValid(value);
+		}
+	}
+
+	static final class ValidateOverride extends Figure {
+		@Override
+		public void validate() {
+			super.validate();
+		}
+	}
+
+	static final class RevIterableOverride extends Figure {
+		@Override
+		public Iterable<IFigure> getChildrenRevIterable() {
+			return super.getChildrenRevIterable();
+		}
+	}
+
+	@Test
+	public void trustBitsForTheRemainingOverrides() {
+		assertEquals(0, M3FigureTrust.of(new PrimTranslateOverride()) & M3FigureTrust.BOUNDS);
+		assertEquals(0, M3FigureTrust.of(new FireMovedOverride()) & M3FigureTrust.BOUNDS);
+		int flag = M3FigureTrust.of(new FlagOverride());
+		assertEquals(M3FigureTrust.BOUNDS | M3FigureTrust.CONTAINS | M3FigureTrust.CONTAINER, flag);
+		assertEquals(0, M3FigureTrust.of(new SetValidOverride()) & M3FigureTrust.VALIDATE);
+		assertEquals(0, M3FigureTrust.of(new ValidateOverride()) & M3FigureTrust.VALIDATE);
+		assertEquals(0, M3FigureTrust.of(new RevIterableOverride()) & M3FigureTrust.CONTAINER);
+	}
+
+	@Test
+	public void xyLayoutPassesFollowManagerAndOrigin() {
+		assumeViewport();
+		Layer layer = layer(80);
+		IFigure first = layer.getChildren().get(0);
+		layer.setBorder(new org.eclipse.draw2d.MarginBorder(7));
+		layer.validate();
+		assertEquals(new Rectangle(7, 7, 40, 30), first.getBounds());
+		XYLayout fresh = new XYLayout();
+		for (IFigure child : layer.getChildren()) {
+			fresh.setConstraint(child, new Rectangle(child.getBounds().x + 1, child.getBounds().y, 40, 30));
+		}
+		layer.setLayoutManager(fresh);
+		layer.validate();
+		assertEquals(new Rectangle(15, 14, 40, 30), first.getBounds());
+		XYLayout subclass = new XYLayout() {
+			// a subclass: the stock loop lays it out
+		};
+		subclass.setConstraint(first, new Rectangle(1, 2, 3, 4));
+		layer.setLayoutManager(subclass);
+		layer.validate();
+		assertEquals(new Rectangle(8, 9, 3, 4), first.getBounds());
+	}
+
+	@Test
+	public void partsCreatedAfterRemovalsSkipFreeSlots() {
+		Figure host = new Figure();
+		List<IFigure> children = new ArrayList<>();
+		for (int i = 0; i < 70; i++) {
+			Figure f = new Figure();
+			f.setBounds(new Rectangle(i, i, i % 3 == 0 ? 5 : 0, i % 2 == 0 ? 4 : -1));
+			children.add(f);
+		}
+		M3FigureChildren index = new M3FigureChildren(host, children);
+		IFigure gone = children.remove(10);
+		index.removed(gone);
+		index.moved(children.get(3));
+		assertEquals(0, index.validation().validated());
+		assertNotNull(index.freeform().extent(host));
+		assertNotNull(index.layout());
+		index.removed(children.remove(0));
+		index.moved(children.get(0));
 	}
 
 	@Test

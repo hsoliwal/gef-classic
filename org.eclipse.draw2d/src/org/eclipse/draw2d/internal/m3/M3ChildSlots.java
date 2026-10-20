@@ -146,10 +146,7 @@ public final class M3ChildSlots {
 	public void relabel(List<? extends IFigure> children) {
 		relabels++;
 		for (int i = 0; i < children.size(); i++) {
-			int slot = slotOf(children.get(i));
-			if (slot >= 0) {
-				labels[slot] = (i + 1) * GAP;
-			}
+			labels[slotOf(children.get(i))] = (i + 1) * GAP;
 		}
 	}
 
