@@ -44,7 +44,7 @@ import org.eclipse.draw2d.geometry.Rectangle;
 public final class M3FigureChildren {
 
 	final IFigure host;
-	final List<? extends IFigure> children;
+	List<? extends IFigure> children;
 	final M3ChildSlots slots = new M3ChildSlots();
 	final M3SpatialGrid grid;
 	private final M3IntList special = new M3IntList();
@@ -106,8 +106,13 @@ public final class M3FigureChildren {
 		}
 	}
 
-	/** Hook: {@code child} was inserted into the child list at {@code index} (-1: appended). */
-	public void added(IFigure child, int index) {
+	/**
+	 * Hook: {@code child} was inserted at {@code index} (-1: appended) into
+	 * {@code list}, the host's child list. Figure replaces an emptied child list
+	 * with a new one on the next add, so the index follows the list it is given.
+	 */
+	public void added(IFigure child, int index, List<? extends IFigure> list) {
+		children = list;
 		modCount++;
 		int at = index < 0 ? children.size() - 1 : index;
 		long label = at > 0 || children.size() > 1 ? slots.labelAt(children, at) : M3ChildSlots.GAP;

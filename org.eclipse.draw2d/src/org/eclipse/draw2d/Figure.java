@@ -208,7 +208,7 @@ public class Figure implements IFigure {
 		}
 		figure.setParent(this);
 		if (m3Children != null) {
-			m3Children.added(figure, index);
+			m3Children.added(figure, index, children);
 		}
 
 		if (layoutManager != null) {

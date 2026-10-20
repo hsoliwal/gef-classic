@@ -48,6 +48,8 @@ public class M3DiagramFixture {
 	public static final class HeadlessUpdateManager extends DeferredUpdateManager {
 		M3RecordingGraphics last;
 		int repairs;
+		/** When set, repairs paint into this graphics instead of a new recording one. */
+		public M3NullGraphics nullGraphics;
 
 		@Override
 		protected void sendUpdateRequest() {
@@ -101,6 +103,9 @@ public class M3DiagramFixture {
 		manager.setGraphicsSource(new GraphicsSource() {
 			@Override
 			public Graphics getGraphics(Rectangle region) {
+				if (manager.nullGraphics != null) {
+					return manager.nullGraphics.reset(region);
+				}
 				manager.last = new M3RecordingGraphics(region, false);
 				manager.repairs++;
 				return manager.last;

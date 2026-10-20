@@ -16,18 +16,28 @@ Headless GEF figure stack (`FreeformViewport > ScalableFreeformLayeredPane > Fre
 `RectangleFigure` nodes on a jittered grid, viewport 1200x800, one JVM per run, median of 15-41 runs);
 `M3ViewportBench`, raw rows in `evidence/`. Stock = fork master `eb83209d` compiled with javac.
 
-| path | stock code | stock 10^4 | stock 10^5 | viewport 10^5 | viewport + trustConstraints 10^5 |
-|---|---|---|---|---|---|
-| paint, damage 50x50 | `Figure.paintChildren` visits every child | 0.10-0.52 ms | 2.56 ms | 21 us | 13 us |
-| paint, whole viewport | same | 0.14-0.73 ms | 3.18 ms | 0.12-0.59 ms | 0.55 ms |
-| scroll + paint | same + validation | 0.67-2.2 ms | 9.88 ms | 0.71-0.87 ms | 1.19 ms |
-| zoom 0.25 + paint | same, under ScaledGraphics | 0.15 ms | 2.64 ms | 0.14-0.23 ms | 0.28 ms |
-| `findFigureAt` | `Layer.containsPoint` + `findDescendantAtExcluding` loop over all children | 48-109 us | 1906 us | 1.3 us | 2.3 us |
-| `findMouseEventTargetAt` | same loops | 47-146 us | 1449 us | 2.6 us | 1.5 us |
-| move one node + update | `XYLayout.layout` + `children.forEach(validate)` + extent + `setFreeformBounds` loops | 0.83-2.3 ms | 106 ms | 5.1-5.6 ms | 48 us |
-| add one node + update | same | 1.3-1.8 ms | 139 ms | 5.7-6.2 ms | 51 us |
-| remove middle node + update | same + `ArrayList.remove` | 1.6-24 ms | 169 ms | 4.2-6.4 ms | 0.51 ms |
-| freeform extent after a move | `FreeformHelper.getFreeformExtent` unions all children | 0.33-0.39 ms | 3.29 ms | 2.5-7.3 us | 4.7 us |
+| path | stock code | stock 10^4 | stock 10^5 | viewport 10^5 | viewport + trustConstraints 10^5 | upstream issues addressed |
+|---|---|---|---|---|---|---|
+| paint, damage 50x50 | `Figure.paintChildren` visits every child | 0.10-0.52 ms | 2.56 ms | 21 us | 13 us | eclipse-gef/gef-classic#303 (clip push/restore garbage per child: off-screen children no longer get `clipRect`/`restoreState`); #952 (Batik `SVGGraphics`, merged 2026-09-22: the culled paint feeds any `Graphics`, SVG export included) |
+| paint, whole viewport | same | 0.14-0.73 ms | 3.18 ms | 0.12-0.59 ms | 0.55 ms | #303 |
+| scroll + paint | same + validation | 0.67-2.2 ms | 9.88 ms | 0.71-0.87 ms | 1.19 ms | #425 (validate/repaint cycle cost), #430 (paint-event storms: each repaint now costs O(visible)) |
+| zoom 0.25 + paint | same, under ScaledGraphics | 0.15 ms | 2.64 ms | 0.14-0.23 ms | 0.28 ms | #303 |
+| `findFigureAt` | `Layer.containsPoint` + `findDescendantAtExcluding` loop over all children | 48-109 us | 1906 us | 1.3 us | 2.3 us | #546 (large Zest graphs: mouse moves over 900+ nodes) |
+| `findMouseEventTargetAt` | same loops | 47-146 us | 1449 us | 2.6 us | 1.5 us | #546 |
+| move one node + update | `XYLayout.layout` + `children.forEach(validate)` + extent + `setFreeformBounds` loops | 0.83-2.3 ms | 106 ms | 5.1-5.6 ms | 48 us | #425; #282 (`fireFigureMoved` on resize only, merged: the index listens to that event for both move and resize) |
+| add one node + update | same | 1.3-1.8 ms | 139 ms | 5.7-6.2 ms | 51 us | #425 |
+| remove middle node + update | same + `ArrayList.remove` | 1.6-24 ms | 169 ms | 4.2-6.4 ms | 0.51 ms | #425 |
+| freeform extent after a move | `FreeformHelper.getFreeformExtent` unions all children | 0.33-0.39 ms | 3.29 ms | 2.5-7.3 us | 4.7 us | #282 (bendpoint/extent recomputation per move) |
+
+Upstream issue numbers are eclipse-gef/gef-classic issues (all closed upstream by workarounds or partial fixes;
+none of them removed the O(n) loops). Found with `gh issue list --search performance`; a GEF-level issue on
+`refreshChildren` was not found.
+
+Rendering seams this leaf keeps intact: Draw2d paints through `Graphics` (`SWTGraphics`, `ScaledGraphics`,
+`AWTGraphics`, and the Batik `SVGGraphics` of #952), so the culled `paintChildren` applies to screen, print and
+SVG export alike, and figures outside the clip neither paint nor, when valid, validate. The drawn plane of the SWT
+viewport programme (render-modes track, the M3 painter behind `-Dswt.widget.mode=m3`) is a `Graphics`-compatible
+target for the same culled paint, not a second paint loop.
 
 Ranges are spreads between runs (JIT and machine load; the agents share the machine). JFR attribution of the
 stock 10^5 run: hit tests are 75% `Layer.containsPoint`; moves/adds/removes are ~87% `XYLayout.layout` plus the
