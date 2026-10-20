@@ -19,3 +19,12 @@ for pass in 1 2; do
 	"$JH/bin/java" -Xmx1g -Djava.io.tmpdir=S:/m3-scratch/tmp -cp "$CPR" com.synexia.openrewrite.viewport.M3PerFileApply \
 		com.synexia.openrewrite.viewport.Draw2dViewport $FILES 2>&1 | grep -E '^(CHANGED|UNCHANGED|ERROR)' | sed "s#$D/##"
 done
+# GEF palette children deltas (correction sites PaletteEditPart.java:390, PaletteStackEditPart.java:270)
+G=$W/org.eclipse.gef/src/org/eclipse/gef
+GFILES="$G/ui/palette/editparts/PaletteEditPart.java $G/internal/ui/palette/editparts/PaletteStackEditPart.java
+	$G/internal/ui/palette/editparts/PinnablePaletteStackEditPart.java"
+for pass in 1 2; do
+	echo "palette recipe pass $pass:"
+	"$JH/bin/java" -Xmx1g -Djava.io.tmpdir=S:/m3-scratch/tmp -cp "$CPR" com.synexia.openrewrite.viewport.M3PerFileApply \
+		com.synexia.openrewrite.viewport.GefPaletteDeltas $GFILES 2>&1 | grep -E '^(CHANGED|UNCHANGED|ERROR)' | sed "s#$G/##"
+done

@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Synexia, Hitesh Soliwal - palette children changes as edit-part deltas
  *******************************************************************************/
 package org.eclipse.gef.ui.palette.editparts;
 
@@ -378,6 +379,100 @@ public abstract class PaletteEditPart extends AbstractGraphicalEditPart implemen
 		return getLayoutSetting() == PaletteViewerPreferences.LAYOUT_ICONS;
 	}
 
+	/*
+	 * Synexia (brief rule 24): whether the class refreshes its children with code of its own (a refreshChildren
+	 * override outside the palette stack parts, which follow children changes in their propertyChange); such
+	 * classes keep the stock refresh on a children change.
+	 */
+	private static final ClassValue<Boolean> M3_OWN_REFRESH = new ClassValue<>() {
+		@Override
+		protected Boolean computeValue(Class<?> type) {
+			for (Class<?> c = type; c != PaletteEditPart.class; c = c.getSuperclass()) {
+				try {
+					c.getDeclaredMethod("refreshChildren"); //$NON-NLS-1$
+					if (!c.getName().equals("org.eclipse.gef.internal.ui.palette.editparts.PaletteStackEditPart") //$NON-NLS-1$
+							&& !c.getName().equals("org.eclipse.gef.internal.ui.palette.editparts.PinnablePaletteStackEditPart")) { //$NON-NLS-1$
+						return Boolean.TRUE;
+					}
+				} catch (NoSuchMethodException e) {
+					// not declared at this level
+				}
+			}
+			return Boolean.FALSE;
+		}
+	};
+
+	/*
+	 * Synexia (brief rule 24): a change of the container's children as edit-part deltas. The child listener
+	 * moves only to and from the entries in the window where the old and new lists differ, and the child edit
+	 * parts follow getModelChildren() over the window where they differ (m3SyncChildren): adding or removing one
+	 * entry touches one edit part instead of a model-to-edit-part map over all of them.
+	 */
+	private void m3ChildrenChanged(List<PaletteEntry> oldChildren, List<PaletteEntry> newChildren) {
+		List<PaletteEntry> before = oldChildren == null ? Collections.emptyList() : oldChildren;
+		List<PaletteEntry> after = newChildren == null ? Collections.emptyList() : newChildren;
+		int head = 0;
+		while (head < before.size() && head < after.size() && before.get(head) == after.get(head)) {
+			head++;
+		}
+		int lastOld = before.size() - 1;
+		int lastNew = after.size() - 1;
+		while (lastOld >= head && lastNew >= head && before.get(lastOld) == after.get(lastNew)) {
+			lastOld--;
+			lastNew--;
+		}
+		traverseChildren(before.subList(head, lastOld + 1), false);
+		if (M3_OWN_REFRESH.get(getClass()).booleanValue()) {
+			refreshChildren();
+		} else {
+			m3SyncChildren();
+		}
+		traverseChildren(after.subList(head, lastNew + 1), true);
+	}
+
+	/*
+	 * Synexia: refreshChildren() over the window where the child edit parts and getModelChildren() differ (common
+	 * head and tail skipped by a two-pointer diff): edit parts in the window are reused, reordered, created or
+	 * removed as refreshChildren() would, the others are not visited.
+	 */
+	private void m3SyncChildren() {
+		List<PaletteEntry> model = getModelChildren();
+		int head = 0;
+		while (head < getChildren().size() && head < model.size()
+				&& getChildren().get(head).getModel() == model.get(head)) {
+			head++;
+		}
+		int lastPart = getChildren().size() - 1;
+		int lastModel = model.size() - 1;
+		while (lastPart >= head && lastModel >= head && getChildren().get(lastPart).getModel() == model.get(lastModel)) {
+			lastPart--;
+			lastModel--;
+		}
+		int tail = model.size() - 1 - lastModel;
+		for (int i = head; i <= lastModel; i++) {
+			Object current = model.get(i);
+			List<? extends org.eclipse.gef.EditPart> parts = getChildren();
+			if (i < parts.size() && parts.get(i).getModel() == current) {
+				continue;
+			}
+			org.eclipse.gef.EditPart found = null;
+			for (int k = i + 1; k < parts.size() - tail && found == null; k++) {
+				if (parts.get(k).getModel() == current) {
+					found = parts.get(k);
+				}
+			}
+			if (found != null) {
+				reorderChild(found, i);
+			} else {
+				addChild(createChild(current), i);
+			}
+		}
+		int extra = getChildren().size() - model.size();
+		for (int k = 0; k < extra; k++) {
+			removeChild(getChildren().get(lastModel + 1));
+		}
+	}
+
 	/**
 	 * @see java.beans.PropertyChangeListener#propertyChange(PropertyChangeEvent)
 	 */
@@ -386,9 +481,8 @@ public abstract class PaletteEditPart extends AbstractGraphicalEditPart implemen
 	public void propertyChange(PropertyChangeEvent evt) {
 		String property = evt.getPropertyName();
 		if (property.equals(PaletteContainer.PROPERTY_CHILDREN)) {
-			traverseChildren((List<PaletteEntry>) evt.getOldValue(), false);
-			refreshChildren();
-			traverseChildren((List<PaletteEntry>) evt.getNewValue(), true);
+			// Synexia (brief rule 24): edit-part deltas over the changed window, no refreshChildren()
+			m3ChildrenChanged((List<PaletteEntry>) evt.getOldValue(), (List<PaletteEntry>) evt.getNewValue());
 		} else if (property.equals(PaletteEntry.PROPERTY_LABEL) || property.equals(PaletteEntry.PROPERTY_SMALL_ICON)
 				|| property.equals(PaletteEntry.PROPERTY_LARGE_ICON)
 				|| property.equals(PaletteEntry.PROPERTY_DESCRIPTION)) {

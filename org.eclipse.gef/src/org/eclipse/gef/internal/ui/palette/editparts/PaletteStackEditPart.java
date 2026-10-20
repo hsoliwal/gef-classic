@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Synexia, Hitesh Soliwal - palette children changes as edit-part deltas
  *******************************************************************************/
 package org.eclipse.gef.internal.ui.palette.editparts;
 
@@ -263,6 +264,12 @@ public class PaletteStackEditPart extends PaletteEditPart implements IPaletteSta
 			activeEntryChanged(event.getOldValue(), event.getNewValue());
 		} else {
 			super.propertyChange(event);
+			if (org.eclipse.gef.palette.PaletteContainer.PROPERTY_CHILDREN.equals(event.getPropertyName())) {
+				// Synexia (brief rule 24): what refreshChildren() adds, after the children delta
+				checkActiveEntrySync();
+				getChildren().stream().filter(ep -> !ep.getFigure().equals(activeFigure))
+						.forEach(ep -> ep.getFigure().setVisible(false));
+			}
 		}
 	}
 
