@@ -122,6 +122,9 @@ public final class M3ChildValidation {
 		int expected = index.modCount;
 		validated = 0;
 		collect(cursor);
+		if (visit.size() > 0 && visit.size() >= index.slots.size()) {
+			M3DeltaGate.fullValidations++;
+		}
 		for (int i = 0; i < visit.size(); i++) {
 			int slot = visit.get(i);
 			IFigure child = index.slots.figure(slot);
@@ -134,6 +137,7 @@ public final class M3ChildValidation {
 			int before = marks;
 			child.validate();
 			validated++;
+			M3DeltaGate.validatedChildren++;
 			index.checkUnmodified(expected);
 			if (marks != before) {
 				collect(cursor);

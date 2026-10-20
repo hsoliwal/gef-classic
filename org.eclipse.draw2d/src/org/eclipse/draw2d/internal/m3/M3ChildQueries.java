@@ -82,12 +82,14 @@ final class M3ChildQueries {
 
 	boolean paintChildren(Graphics graphics, IClippingStrategy strategy) {
 		if (strategy != null) {
+			fallback();
 			return false;
 		}
 		graphics.getClip(clip);
 		index.grid.query(clip.x, clip.y, clip.width, clip.height);
 		collect(M3FigureTrust.PAINT);
 		if (found.size() * PAINT_SHARE > index.slots.size()) {
+			fallback();
 			return false;
 		}
 		found.sortBy(index.slots.labels());
@@ -104,6 +106,7 @@ final class M3ChildQueries {
 					Rectangle element = child.getBounds();
 					if (element.intersects(graphics.getClip(Rectangle.SINGLETON))) {
 						graphics.clipRect(element);
+						M3DeltaGate.paintedChildren++;
 						child.paint(graphics);
 						graphics.restoreState();
 					}
@@ -114,6 +117,12 @@ final class M3ChildQueries {
 			release(visit);
 		}
 		return true;
+	}
+
+	/** The stock loop paints: every child is asked. */
+	private void fallback() {
+		M3DeltaGate.fullPaints++;
+		M3DeltaGate.paintedChildren += index.slots.size();
 	}
 
 	private int pointCandidates(int x, int y, int bit) {

@@ -145,6 +145,7 @@ public final class M3ChildSlots {
 	/** Gives every registered child of {@code children} the label (position + 1) * GAP. */
 	public void relabel(List<? extends IFigure> children) {
 		relabels++;
+		M3DeltaGate.relabels++;
 		for (int i = 0; i < children.size(); i++) {
 			labels[slotOf(children.get(i))] = (i + 1) * GAP;
 		}

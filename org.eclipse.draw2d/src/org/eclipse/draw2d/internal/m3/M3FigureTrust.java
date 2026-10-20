@@ -47,6 +47,13 @@ public final class M3FigureTrust {
 	/** A container whose child list the index may mirror. */
 	public static final int CONTAINER = 1 << 6;
 
+	/**
+	 * A container whose invalidations run Figure.revalidate and Figure.invalidate
+	 * unchanged, so the index can tell an add, remove, setConstraint, resize or
+	 * child revalidate from a direct revalidate.
+	 */
+	public static final int INVALIDATION = 1 << 7;
+
 	private static final ClassValue<Integer> CACHE = new ClassValue<>() {
 		@Override
 		protected Integer computeValue(Class<?> type) {
@@ -86,6 +93,9 @@ public final class M3FigureTrust {
 		}
 		if (!declares(type, "getChildren") && !declares(type, "getChildrenRevIterable")) { //$NON-NLS-1$ //$NON-NLS-2$
 			bits |= CONTAINER;
+		}
+		if (!declares(type, "invalidate") && !declares(type, "revalidate")) { //$NON-NLS-1$ //$NON-NLS-2$
+			bits |= INVALIDATION;
 		}
 		return bits;
 	}

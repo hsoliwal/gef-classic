@@ -54,12 +54,16 @@ public final class M3FigureChildren {
 	private M3ChildValidation validation;
 	private M3XYLayoutPlan layout;
 	private M3FreeformExtent freeform;
+	private final boolean attributes;
+	private boolean explained;
 
 	/** Indexes the current children of {@code host}; {@code children} is its live child list. */
 	public M3FigureChildren(IFigure host, List<? extends IFigure> children) {
 		this.host = host;
 		this.children = children;
 		this.grid = new M3SpatialGrid(cellShift(children));
+		this.attributes = (M3FigureTrust.of(host) & M3FigureTrust.INVALIDATION) != 0;
+		M3DeltaGate.indexBuilds++;
 		for (int i = 0; i < children.size(); i++) {
 			register(children.get(i), (i + 1) * M3ChildSlots.GAP);
 		}
@@ -172,6 +176,31 @@ public final class M3FigureChildren {
 			if (slot >= 0) {
 				validation.validity(slot, valid);
 			}
+		}
+	}
+
+	/**
+	 * Hook: the next Figure.invalidate of the host comes from add, remove,
+	 * setConstraint, a resize of the host, or the revalidate of a child; it
+	 * changes no constraint in place.
+	 */
+	public void explain() {
+		explained = true;
+	}
+
+	/**
+	 * Hook body of Figure.invalidate for the host. An invalidation that
+	 * {@link #explain()} did not announce is direct (client code, invalidateTree,
+	 * a border or layout manager change): the XY layout then compares every
+	 * constraint on its next pass. {@code notifier}: the host has layout
+	 * listeners, whose callbacks may change constraints; every invalidation counts
+	 * as direct.
+	 */
+	public void invalidated(boolean notifier) {
+		boolean direct = !explained || notifier || !attributes;
+		explained = false;
+		if (direct && layout != null) {
+			layout.unexplained();
 		}
 	}
 

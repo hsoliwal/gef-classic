@@ -29,7 +29,10 @@ import java.util.logging.Logger;
  * </p>
  * <p>
  * {@code -Ddraw2d.viewport.minChildren=<n>} (default 64) is the child count at
- * which a container gets its index. {@code -Ddraw2d.viewport.verify=true}
+ * which a container gets its index. {@code -Ddraw2d.viewport.constraints=}
+ * {@code exact}, {@code attributed} (default) or {@code trusted} chooses how
+ * the XY layout finds constraints changed in place ({@link #CONSTRAINTS}).
+ * {@code -Ddraw2d.viewport.verify=true}
  * re-checks every indexed answer against the stock scan and throws
  * {@link IllegalStateException} on a difference (test runs only).
  * </p>
@@ -45,11 +48,30 @@ public final class M3ViewportMode {
 	/** Child count at which a container gets its child index. */
 	public static final int MIN_CHILDREN = Math.max(1, Integer.getInteger("draw2d.viewport.minChildren", 64)); //$NON-NLS-1$
 
+	/** Constraint policy: every XY layout pass compares every constraint with its snapshot (stock-exact, O(n)). */
+	public static final int EXACT = 0;
+
 	/**
-	 * Whether XY layout constraints are only ever replaced through setConstraint,
-	 * never changed in place; lets the XY layout skip its snapshot sweep.
+	 * Constraint policy: a pass compares every constraint only after the container
+	 * was revalidated or invalidated directly (not by add, remove, setConstraint,
+	 * a resize or a child's revalidate), as after changing a constraint in place;
+	 * otherwise it visits the changed children only.
 	 */
-	public static final boolean TRUST_CONSTRAINTS = Boolean.getBoolean("draw2d.viewport.trustConstraints"); //$NON-NLS-1$
+	public static final int ATTRIBUTED = 1;
+
+	/** Constraint policy: constraints are never changed in place; a pass visits the changed children only. */
+	public static final int TRUSTED = 2;
+
+	/**
+	 * The XY constraint policy: {@code -Ddraw2d.viewport.constraints=exact|attributed|trusted},
+	 * default {@link #ATTRIBUTED}; {@code -Ddraw2d.viewport.trustConstraints=true} means
+	 * {@link #TRUSTED}.
+	 */
+	public static final int CONSTRAINTS = policy(System.getProperty("draw2d.viewport.constraints"), //$NON-NLS-1$
+			Boolean.getBoolean("draw2d.viewport.trustConstraints")); //$NON-NLS-1$
+
+	/** Names of the constraint policies, by value. */
+	static final String[] POLICY_NAMES = { "exact", "attributed", "trusted" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	/** Whether every indexed answer is re-checked against the stock scan. */
 	public static final boolean VERIFY = Boolean.getBoolean("draw2d.viewport.verify"); //$NON-NLS-1$
@@ -58,8 +80,16 @@ public final class M3ViewportMode {
 		Level level = ENABLED ? Level.INFO : Level.FINE;
 		if (LOG.isLoggable(level)) {
 			LOG.log(level, "draw2d viewport mode " + (ENABLED ? "viewport" : "original") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					+ ", minChildren " + MIN_CHILDREN + (TRUST_CONSTRAINTS ? ", trustConstraints" : "") + (VERIFY ? ", verify" : "")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+					+ ", minChildren " + MIN_CHILDREN + ", constraints " + POLICY_NAMES[CONSTRAINTS] //$NON-NLS-1$ //$NON-NLS-2$
+					+ (VERIFY ? ", verify" : "")); //$NON-NLS-1$ //$NON-NLS-2$
 		}
+	}
+
+	static int policy(String value, boolean trust) {
+		if (trust || "trusted".equals(value)) { //$NON-NLS-1$
+			return TRUSTED;
+		}
+		return "exact".equals(value) ? EXACT : ATTRIBUTED; //$NON-NLS-1$
 	}
 
 	private M3ViewportMode() {

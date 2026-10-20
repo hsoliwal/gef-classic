@@ -49,6 +49,8 @@ public final class M3XYLayoutPlan {
 	private int ox;
 	private int oy;
 	private boolean full = true;
+	private boolean sweepPending;
+	private boolean sweepPass;
 	private final M3IntList visit = new M3IntList();
 	private final M3IntList dirtyList = new M3IntList();
 	private final M3IntList prefList = new M3IntList();
@@ -115,6 +117,19 @@ public final class M3XYLayoutPlan {
 		mark(slot);
 	}
 
+	/**
+	 * The host was invalidated directly ({@link M3FigureChildren#invalidated}):
+	 * under the attributed policy the next pass, or the rest of the current one,
+	 * compares every constraint, since the stock loop would pick up constraints
+	 * changed in place.
+	 */
+	void unexplained() {
+		if (M3ViewportMode.CONSTRAINTS != M3ViewportMode.TRUSTED) {
+			sweepPending = true;
+			marks++;
+		}
+	}
+
 	/** Hook body of AbstractConstraintLayout.setConstraint for a child of the host. */
 	public void constraintChanged(IFigure child) {
 		int slot = index.slots.slotOf(child);
@@ -129,6 +144,7 @@ public final class M3XYLayoutPlan {
 	 */
 	public boolean layout(XYLayout layout) {
 		if (layout.getClass() != XYLayout.class && layout.getClass() != FreeformLayout.class) {
+			M3DeltaGate.fullLayouts++;
 			return false;
 		}
 		Point offset = layout.getOrigin(index.host);
@@ -138,11 +154,15 @@ public final class M3XYLayoutPlan {
 			ox = offset.x;
 			oy = offset.y;
 			full = false;
+			sweepPending = false;
+			M3DeltaGate.fullLayouts++;
 			for (IFigure f : index.children) {
 				apply(layout, f, index.slots.slotOf(f), offset);
 			}
 			return true;
 		}
+		sweepPass = sweepPending;
+		sweepPending = false;
 		long cursor = Long.MIN_VALUE;
 		collect(cursor);
 		for (int i = 0; i < visit.size(); i++) {
@@ -159,11 +179,12 @@ public final class M3XYLayoutPlan {
 	}
 
 	private void collect(long cursor) {
-		if (M3ViewportMode.TRUST_CONSTRAINTS) {
-			collectChanged(cursor);
+		if (M3ViewportMode.CONSTRAINTS == M3ViewportMode.EXACT || sweepPass || sweepPending) {
+			M3DeltaGate.constraintSweeps++;
+			sweep(cursor, visit);
 			return;
 		}
-		sweep(cursor, visit);
+		collectChanged(cursor);
 	}
 
 	/** Every child that needs a stock call, found by comparing every snapshot. */
@@ -179,8 +200,8 @@ public final class M3XYLayoutPlan {
 	}
 
 	/**
-	 * With {@code -Ddraw2d.viewport.trustConstraints=true} (constraints are
-	 * replaced through setConstraint, never changed in place): only the marked
+	 * Under the trusted policy, and the attributed one while the host was not
+	 * invalidated directly (no constraint changed in place): only the marked
 	 * children, the children sized by their preferred size and the children whose
 	 * classes override setBounds; O(changed) instead of a sweep over all slots.
 	 */
@@ -216,7 +237,8 @@ public final class M3XYLayoutPlan {
 			sweep(cursor, check);
 			if (check.size() != visit.size()) {
 				throw new IllegalStateException("draw2d viewport: an XY constraint of " + index.host //$NON-NLS-1$
-						+ " was changed in place although draw2d.viewport.trustConstraints is set"); //$NON-NLS-1$
+						+ " was changed in place without a direct revalidate of the container (constraint policy " //$NON-NLS-1$
+						+ M3ViewportMode.POLICY_NAMES[M3ViewportMode.CONSTRAINTS] + ")"); //$NON-NLS-1$
 			}
 		}
 	}
