@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 
-import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Scrollable;
 
 import org.eclipse.draw2d.UpdateManager;
 
@@ -65,7 +65,7 @@ public final class M3Visibility {
 	}
 
 	/** Hook body of LightweightSystem.setControl and setUpdateManager. */
-	public static void register(UpdateManager manager, Control canvas) {
+	public static void register(UpdateManager manager, Scrollable canvas) {
 		register(manager, () -> canvas.isDisposed() || !canvas.isVisible() || canvas.getClientArea().isEmpty());
 	}
 

@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 import org.eclipse.draw2d.IFigure;
 import org.eclipse.draw2d.RectangleFigure;
 import org.eclipse.draw2d.UpdateListener;
+import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.draw2d.internal.m3.M3DeltaGate;
 import org.eclipse.draw2d.internal.m3.M3ViewportMode;
@@ -71,7 +72,7 @@ public class M3HiddenViewportTest {
 			case 0 -> d.layer.setConstraint(f, f.getBounds().getTranslated(r.nextInt(9) - 4, r.nextInt(9) - 4));
 			case 1 -> f.setVisible(!f.isVisible());
 			case 2 -> d.layer.add(new RectangleFigure(), new Rectangle(r.nextInt(8000), r.nextInt(8000), 30, 20));
-			default -> f.setPreferredSize(10 + r.nextInt(30), 10 + r.nextInt(20));
+			default -> f.setPreferredSize(new Dimension(10 + r.nextInt(30), 10 + r.nextInt(20)));
 			}
 			if (i % 100 == 99) {
 				d.manager.requestUpdate();
@@ -144,10 +145,11 @@ public class M3HiddenViewportTest {
 		assertEquals(1, passes.validations);
 		assertEquals(0, passes.paints);
 		assertTrue(M3DeltaGate.deferredRepairs > 0);
+		assertEquals(0, d.manager.repairs);
 		hidden[0] = false;
-		// the window system's paint comes first: it paints everything and the regions dirtied while hidden go
-		d.manager.performUpdate(new Rectangle(0, 0, WIDTH, HEIGHT));
 		d.manager.requestUpdate();
+		d.manager.performUpdate(new Rectangle(0, 0, WIDTH, HEIGHT));
+		assertEquals(1, passes.validations);
 		assertEquals(1, passes.paints);
 		assertEquals(1, d.manager.repairs);
 	}
