@@ -1,0 +1,137 @@
+stty: /dev/tty: No such device or address
+Oct 20, 2026 12:53:47 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 64, constraints attributed, verify
+Oct 20, 2026 12:53:49 PM org.eclipse.draw2d.test.m3.M3ViewportDeltaTest zoomStepsValidateNothing
+INFO: zoom sweep: 13 steps, painted children 4542
+Oct 20, 2026 12:53:52 PM org.eclipse.draw2d.test.m3.M3ViewportDeltaTest resizeStepsPaintOnlyTheStrips
+INFO: resize sweep: 40 steps, painted children 773 (meeting the strips 1144), visible children per step about 460
+Oct 20, 2026 12:53:52 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 64, constraints attributed, verify
+Oct 20, 2026 12:54:01 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 4, constraints exact, verify
+Oct 20, 2026 12:54:02 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 64, constraints attributed
+Oct 20, 2026 12:54:17 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 64, constraints attributed, verify
+Oct 20, 2026 12:54:25 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 64, constraints exact, verify
+Oct 20, 2026 12:55:04 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 4, constraints attributed, verify
+Oct 20, 2026 12:55:14 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 1 nodes 107: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=10 fullValidations=0 relabels=124/2366 indexBuilds=0 paintedChildren=5510 validatedChildren=3095 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:16 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 2 nodes 144: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=49 fullValidations=0 relabels=106/1983 indexBuilds=0 paintedChildren=12023 validatedChildren=2635 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:21 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 3 nodes 181: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=66 fullValidations=0 relabels=91/1503 indexBuilds=0 paintedChildren=18643 validatedChildren=3309 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:25 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 4 nodes 218: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=80 fullValidations=0 relabels=121/2335 indexBuilds=0 paintedChildren=14010 validatedChildren=3459 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:27 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 5 nodes 255: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=3 fullValidations=0 relabels=90/1531 indexBuilds=0 paintedChildren=6366 validatedChildren=3892 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:31 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 6 nodes 292: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=174 fullValidations=0 relabels=81/1420 indexBuilds=0 paintedChildren=25390 validatedChildren=3408 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:32 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 7 nodes 329: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=116 fullValidations=0 relabels=110/1931 indexBuilds=0 paintedChildren=39921 validatedChildren=3630 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:33 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 8 nodes 366: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=0 fullValidations=0 relabels=83/1400 indexBuilds=0 paintedChildren=6407 validatedChildren=4665 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:34 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 9 nodes 403: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=0 fullValidations=0 relabels=98/1648 indexBuilds=0 paintedChildren=8135 validatedChildren=4917 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:34 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 10 nodes 440: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=62 fullValidations=0 relabels=91/1464 indexBuilds=0 paintedChildren=33347 validatedChildren=5149 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:35 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 11 nodes 477: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=112 fullValidations=0 relabels=73/1128 indexBuilds=0 paintedChildren=46988 validatedChildren=5978 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:35 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 12 nodes 514: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=199 fullValidations=0 relabels=116/1975 indexBuilds=0 paintedChildren=57322 validatedChildren=5116 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:36 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 13 nodes 551: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=112 fullValidations=0 relabels=70/1057 indexBuilds=0 paintedChildren=49625 validatedChildren=4709 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:36 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 14 nodes 88: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=55 fullValidations=0 relabels=157/2970 indexBuilds=0 paintedChildren=21110 validatedChildren=2878 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:37 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 15 nodes 125: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=195 fullValidations=0 relabels=121/2323 indexBuilds=0 paintedChildren=23403 validatedChildren=3097 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:37 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 16 nodes 162: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=18 fullValidations=0 relabels=78/1122 indexBuilds=0 paintedChildren=7617 validatedChildren=2373 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:38 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 17 nodes 199: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=5 fullValidations=0 relabels=71/1291 indexBuilds=0 paintedChildren=4929 validatedChildren=2382 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:38 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 18 nodes 236: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=65 fullValidations=0 relabels=114/2135 indexBuilds=0 paintedChildren=22920 validatedChildren=4327 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:39 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 19 nodes 273: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=180 fullValidations=0 relabels=102/1636 indexBuilds=0 paintedChildren=30017 validatedChildren=3505 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:40 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 20 nodes 310: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=106 fullValidations=0 relabels=102/1637 indexBuilds=0 paintedChildren=8927 validatedChildren=3224 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:40 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 21 nodes 347: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=98 fullValidations=0 relabels=136/2413 indexBuilds=0 paintedChildren=43815 validatedChildren=4675 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:41 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 22 nodes 384: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=0 fullValidations=0 relabels=90/1524 indexBuilds=0 paintedChildren=7420 validatedChildren=3944 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:41 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 23 nodes 421: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=2 fullValidations=0 relabels=96/1567 indexBuilds=0 paintedChildren=7896 validatedChildren=4705 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:42 PM org.eclipse.draw2d.test.m3.M3ViewportDifferentialTest deltaStepsDoNoWorkOverAllChildren
+INFO: delta gate seed 24 nodes 458: fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=11 fullValidations=0 relabels=63/983 indexBuilds=0 paintedChildren=11376 validatedChildren=4196 wholeRepaints=0 stockWholeRepaints=0
+Oct 20, 2026 12:55:42 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 64, constraints trusted, verify
+Oct 20, 2026 12:55:42 PM org.eclipse.draw2d.internal.m3.M3ViewportMode <clinit>
+INFO: draw2d viewport mode viewport, minChildren 64, constraints trusted, verify
+Oct 20, 2026 12:55:49 PM org.eclipse.draw2d.test.m3.M3HiddenViewportTest hiddenCanvasDefersEveryUpdateAndPaintsOnceOnShow
+INFO: hidden: validations 0, paints 0, repairs 0, fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=0 fullValidations=0 relabels=0/0 indexBuilds=0 paintedChildren=0 validatedChildren=0, deferredUpdates 100
+Oct 20, 2026 12:55:49 PM org.eclipse.draw2d.test.m3.M3HiddenViewportTest hiddenCanvasDefersEveryUpdateAndPaintsOnceOnShow
+INFO: shown: validations 1, paints 1, repairs 1, fullLayouts=0 constraintSweeps=0 fullPaints=0 widePaints=0 fullValidations=0 relabels=0/0 indexBuilds=0 paintedChildren=385 validatedChildren=6700
+╷
+├─ JUnit Platform Suite ✔
+├─ JUnit Jupiter ✔
+│  ├─ M3ChildIndexTest ✔
+│  │  ├─ attributionNeedsStockInvalidationAndNoLayoutListeners() ✔
+│  │  ├─ paintFallsBackUnderClippingStrategyAndWideClips() ✔
+│  │  ├─ trustBitsFollowOverrides() ✔
+│  │  ├─ reentrantHitTestWorksOnACopy() ✔
+│  │  ├─ partsCreatedAfterRemovalsSkipFreeSlots() ✔
+│  │  ├─ freeformExtentOfLiveChildrenOnlyAndOriginChangesInY() ✔
+│  │  ├─ removingASiblingDuringPaintThrows() ✔
+│  │  ├─ trustBitsForTheRemainingOverrides() ✔
+│  │  ├─ xyLayoutPassesFollowManagerAndOrigin() ✔
+│  │  ├─ indexOverEmptyChildrenAndForeignFigures() ✔
+│  │  ├─ verifyCatchesBoundsChangedWithoutFigureMoved() ✔
+│  │  ├─ emptiedFreeformLayerKeepsItsIndex() ✔
+│  │  └─ directInvalidationWithoutLayoutPlanAndDuringALayoutPass() ✔
+│  ├─ M3CollectionsTest ✔
+│  │  ├─ intListSortsSmallAndLargeKeys() ✔
+│  │  ├─ gridMatchesBruteForce() ✔
+│  │  ├─ extentTreeTracksBoundingBox() ✔
+│  │  ├─ gridEpochWraps() ✔
+│  │  ├─ slotsMatchModel() ✔
+│  │  └─ labelsRelabelWhenGapsRunOut() ✔
+│  ├─ M3ViewportDeltaTest ✔
+│  │  ├─ zoomStepsValidateNothing() ✔
+│  │  └─ resizeStepsPaintOnlyTheStrips() ✔
+│  ├─ M3ViewportDifferentialTest ✔
+│  │  ├─ viewportModeMatchesStock() ✔
+│  │  ├─ exactPolicySweepsOnDeltaSteps() ✔
+│  │  ├─ originalModeLogsItsSelectionAtFine() ✔
+│  │  ├─ viewportModeWithoutVerifyMatchesStock() ✔
+│  │  ├─ originalModeMatchesStock() ✔
+│  │  ├─ viewportModeWithStockDamageRepairsLikeStock() ✔
+│  │  ├─ viewportModeWithExactConstraintsMatchesStock() 38086 ms ✔
+│  │  ├─ deltaStepsDoNoWorkOverAllChildren() 38157 ms ✔
+│  │  ├─ verifyCatchesInPlaceMutationUnderTrustedConstraints() ✔
+│  │  └─ viewportModeWithTrustedConstraintsMatchesStock() ✔
+│  ├─ M3DamageTest ✔
+│  │  ├─ piecesRepairApartAndMergeWhenClose() ✔
+│  │  ├─ stripsOnlyForSizeFreeFiguresWithoutBorderOrClippingStrategy() ✔
+│  │  └─ sizeFreeAndChildKeepingBits() ✔
+│  └─ M3HiddenViewportTest ✔
+│     ├─ hiddenCanvasDefersEveryUpdateAndPaintsOnceOnShow() ✔
+│     └─ explicitUpdateWhileHiddenValidatesWithoutPainting() ✔
+└─ JUnit Vintage ✔
+
+Test run finished after 122001 ms
+[         9 containers found      ]
+[         0 containers skipped    ]
+[         9 containers started    ]
+[         0 containers aborted    ]
+[         9 containers successful ]
+[         0 containers failed     ]
+[        36 tests found           ]
+[         0 tests skipped         ]
+[        36 tests started         ]
+[         0 tests aborted         ]
+[        36 tests successful      ]
+[         0 tests failed          ]
+
+coverage org.eclipse.draw2d.internal.m3: lines 99.33% (8 missed), branches 97.79% (17 missed)

@@ -86,17 +86,19 @@ public final class M3DirtyPieces {
 	 * true; returns false for the stock paint. Consumes the pieces of this repair.
 	 */
 	public boolean repair(Rectangle damage, Consumer<Rectangle> paint) {
-		int n = frozenOverflow || damage == null || damage.isEmpty() ? 0 : clip();
-		consume();
-		if (n < 2) {
+		if (frozenOverflow || damage == null || damage.isEmpty()) {
+			consume();
 			return false;
 		}
-		n = merge(n);
+		// the stock damage unions a figure's regions before clipping them; pieces clip first, so regions that
+		// lie outside their ancestors (strips a shrinking child uncovers beyond its shrinking parent) vanish
+		int n = merge(clip());
+		consume();
 		long area = 0;
 		for (int i = 0; i < n; i++) {
 			area += (long) merged[4 * i + 2] * merged[4 * i + 3];
 		}
-		if (n < 2 || 4 * area > 3L * damage.width * damage.height) {
+		if (4 * area > 3L * damage.width * damage.height) {
 			return false;
 		}
 		M3DeltaGate.pieceRepairs++;

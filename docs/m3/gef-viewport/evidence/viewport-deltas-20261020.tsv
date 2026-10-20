@@ -1,0 +1,13 @@
+label	nodes	operation	ns_median	repaired_pixels_per_step	painted_children_per_step	validated_children_per_step
+stock	100000	resize step (diagonal, 60 steps)	8669000	804619	-	-
+stock	100000	zoom step (13 steps)	13671900	556017	-	-
+viewport+stockdamage	100000	resize step (diagonal, 60 steps)	864800	804619	351	0
+viewport+stockdamage	100000	zoom step (13 steps)	678300	556017	375	0
+viewport	100000	resize step (diagonal, 60 steps)	187900	9705	16	0
+viewport	100000	zoom step (13 steps)	1194700	556017	375	0
+stock	1000000	resize step (diagonal, 60 steps)	216310400	804619	-	-
+stock	1000000	zoom step (13 steps)	317877500	556017	-	-
+viewport+stockdamage	1000000	resize step (diagonal, 60 steps)	560100	804619	351	0
+viewport+stockdamage	1000000	zoom step (13 steps)	537500	556017	375	0
+viewport	1000000	resize step (diagonal, 60 steps)	128200	9705	16	0
+viewport	1000000	zoom step (13 steps)	498100	556017	375	0

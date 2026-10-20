@@ -153,17 +153,49 @@ paint comes first, it drops them). An explicit `performUpdate` while hidden stil
 current bounds) but does not paint. Gate: `M3HiddenViewportTest` (hide, 10^4 changes with 100 posted updates,
 show: 0 validation and 0 paint passes while hidden, then exactly 1 validation pass and 1 paint pass).
 
+### 3.8 Viewport deltas: strips and pieces (`M3Damage`, `M3DirtyPieces`, brief rule 24)
+Stock `Figure.setBounds` damages the whole old bounds (through the parent) and the whole new bounds, and the update
+manager repairs one rectangle, the union of every dirty region. A canvas resize therefore repaints the window, a
+freeform extent change repaints every layer, and two small changes far apart repaint everything between them.
+In the viewport mode (`-Ddraw2d.viewport.damage=stock` turns it off):
+- **Strips.** A bounds change of a figure whose painting does not depend on its size (trust bit `SIZE_FREE`: no
+  paint, paintFigure, paintBorder, paintClientArea or paintChildren override below Figure except the reviewed
+  size-free ones of Viewport, ScalableLayeredPane, ScalableFreeformLayeredPane and ConnectionLayer), without a
+  border or clipping strategy, damages only old minus new (through the parent, as `erase`) and new minus old
+  (through the figure), as up to four bands each, when it only resizes or when the figure keeps its children in
+  place on a move (`KEEPS_CHILDREN`: FreeformLayer, FreeformLayeredPane). The pixels the old and new bounds share
+  stay valid: opaque fills are uniform, children keep their place and paint themselves where they move.
+- **Pieces.** Every `addDirtyRegion` is also kept as a piece (up to 16 per repair). At repair time the pieces are
+  clipped up the parent chain like the stock contributions; pieces that overlap or whose union is at most 1.25
+  times their areas merge; when the merged pieces cover at most 3/4 of the stock damage rectangle (none or one
+  piece included), each is repaired with its own clip. The stock damage unions a figure's regions before clipping
+  them, so the strips a shrinking viewport uncovers beyond its shrinking root become the whole root; clipped
+  first, they vanish. Update listeners still receive the stock damage rectangle and map.
+- **Proof.** A frame raster (`M3FrameRaster`): every drawing operation stamps its device bounding box (lines and
+  polylines their segments, at positions that do not depend on the clip), cut by the clip, with a value derived
+  from the operation and the colours. Repairs paint into one persistent raster, as a canvas keeps its pixels;
+  pixels a resize exposes start as a marker no operation writes. After every flush the raster must equal a fresh
+  paint of the whole canvas. The recorded differential runs in this frame mode for every viewport variant (the
+  repair operations legitimately differ from stock), and in operation mode for `damage=stock` (identical repair
+  operations) and the original mode.
+- **Gate.** `M3ViewportDeltaTest`: 40 canvas resize steps (width only, height only, both growing, both shrinking)
+  on 10^5 nodes validate no child and paint at most the children meeting the exposed or uncovered strips; 13 zoom
+  steps validate no child (every visible pixel changes, so the visible children paint); every step's raster equals
+  a fresh paint.
+
 ## 4. Proof
 
 - **Recorded differential** (`M3ViewportDifferentialTest`, `M3Draw2dScript`): stock Draw2d and the M3 build in
   separate class loaders run the same seeded public-API scripts over a mixed population (shapes, polylines, nested
   containers, classes overriding `setBounds`/`validate`/`containsPoint`, invisible, empty, negative and overflowing
   rectangles, mouse listeners, figure listeners): adds, removes, z-order changes, constraint replacement and
-  in-place mutation, direct `setBounds`, visibility, enablement, preferred sizes, scroll, zoom, paint (graphics
-  operation hash), the four hit tests, freeform extents, repairs (graphics operation hash and count), validate and
-  figure-moved events, and every node's final bounds. 24 seeds x 400 steps x 5 variants (viewport attributed,
-  viewport exact, viewport trusted without in-place changes, viewport without verify, original): identical. Verify mode is on in the M3 loader. Mutation check: reversing
-  the hit-test order fails at seed 1.
+  in-place mutation, direct `setBounds`, visibility, enablement, preferred sizes, scroll, zoom, canvas resizes,
+  paint (graphics operation hash), the four hit tests, freeform extents, repairs, validate and figure-moved events,
+  and every node's final bounds. Repairs are logged as the canvas frame raster (3.8) for the viewport variants and
+  as the repair operations (hash and count) for the original mode and the viewport mode with
+  `damage=stock`. 24 seeds x 400 steps x 7 variants (viewport attributed, exact, trusted without in-place changes,
+  without verify, delta-only, stock damage, original): identical. Verify mode is on in the M3 loader. Mutation
+  check: reversing the hit-test order fails at seed 1.
 - **Delta gate** (`DELTA_GATE.tsv`, `M3DeltaGate`): delta-only scripts (24 seeds x 400 steps of add, remove,
   `setConstraint`, `setBounds`, visibility, enablement, z-order, preferred size, front bursts, emptying a
   container, inside a fixed frame) match stock line for line, and from the first flush on the M3 build counts

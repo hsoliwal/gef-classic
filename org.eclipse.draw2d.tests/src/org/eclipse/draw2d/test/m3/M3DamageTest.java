@@ -124,6 +124,12 @@ public class M3DamageTest {
 		pieces.begin();
 		assertFalse(pieces.repair(new Rectangle(0, 0, 150, 170), r -> painted.add(r.getCopy())));
 		assertEquals(0, painted.size());
+		// pieces outside their ancestors vanish: nothing to paint, although the stock union is not empty
+		pieces.add(child, 2000, 0, 10, 10);
+		pieces.add(child, 0, 2000, 10, 10);
+		pieces.begin();
+		assertTrue(pieces.repair(new Rectangle(0, 0, 1000, 1000), r -> painted.add(r.getCopy())));
+		assertEquals(0, painted.size());
 		// more pieces than kept: stock rectangle
 		for (int i = 0; i < 20; i++) {
 			pieces.add(child, i * 40, 0, 5, 5);
