@@ -44,6 +44,9 @@ public final class M3XYLayoutPlan {
 	private int[] cw = new int[16];
 	private int[] ch = new int[16];
 	private long[] dirty = new long[1];
+	// Membership lasts until compaction, even after dirty clearing or slot reuse.
+	private boolean[] dirtyQueued = new boolean[16];
+	private boolean[] prefQueued = new boolean[16];
 	private int marks;
 	private Object manager;
 	private int ox;
@@ -76,6 +79,8 @@ public final class M3XYLayoutPlan {
 			cy = Arrays.copyOf(cy, size);
 			cw = Arrays.copyOf(cw, size);
 			ch = Arrays.copyOf(ch, size);
+			dirtyQueued = Arrays.copyOf(dirtyQueued, size);
+			prefQueued = Arrays.copyOf(prefQueued, size);
 		}
 		if (slot >>> 6 >= dirty.length) {
 			dirty = Arrays.copyOf(dirty, Math.max((slot >>> 6) + 1, dirty.length * 2));
@@ -91,7 +96,10 @@ public final class M3XYLayoutPlan {
 		ensure(slot);
 		if (!isDirty(slot)) {
 			dirty[slot >>> 6] |= 1L << slot;
-			dirtyList.add(slot);
+			if (!dirtyQueued[slot]) {
+				dirtyQueued[slot] = true;
+				dirtyList.add(slot);
+			}
 			if (slot != applying) {
 				marks++;
 			}
@@ -193,6 +201,8 @@ public final class M3XYLayoutPlan {
 			if (isDirty(s) && index.slots.figure(s) != null) {
 				dirtyList.set(kept++, s);
 				offer(s, cursor, labels);
+			} else {
+				dirtyQueued[s] = false;
 			}
 		}
 		truncate(dirtyList, kept);
@@ -202,6 +212,8 @@ public final class M3XYLayoutPlan {
 			if (index.slots.figure(s) != null && ref[s] != null && (cw[s] == -1 || ch[s] == -1)) {
 				prefList.set(kept++, s);
 				offer(s, cursor, labels);
+			} else {
+				prefQueued[s] = false;
 			}
 		}
 		truncate(prefList, kept);
@@ -259,7 +271,8 @@ public final class M3XYLayoutPlan {
 				cy[slot] = bounds.y;
 				cw[slot] = bounds.width;
 				ch[slot] = bounds.height;
-				if (bounds.width == -1 || bounds.height == -1) {
+				if ((bounds.width == -1 || bounds.height == -1) && !prefQueued[slot]) {
+					prefQueued[slot] = true;
 					prefList.add(slot);
 				}
 			}
