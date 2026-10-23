@@ -265,7 +265,7 @@ public class PaletteStackEditPart extends PaletteEditPart implements IPaletteSta
 		} else {
 			super.propertyChange(event);
 			if (org.eclipse.gef.palette.PaletteContainer.PROPERTY_CHILDREN.equals(event.getPropertyName())) {
-				// Synexia (brief rule 24): what refreshChildren() adds, after the children delta
+				// Synexia (brief rule 24): what the stack adds to a children refresh, after the children delta
 				checkActiveEntrySync();
 				getChildren().stream().filter(ep -> !ep.getFigure().equals(activeFigure))
 						.forEach(ep -> ep.getFigure().setVisible(false));

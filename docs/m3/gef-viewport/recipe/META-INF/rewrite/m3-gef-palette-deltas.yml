@@ -43,7 +43,7 @@ recipeList:
         	};
   - com.synexia.openrewrite.viewport.M3AddMemberIfMissing:
       declaringClasses: [org.eclipse.gef.ui.palette.editparts.PaletteEditPart]
-      memberName: m3ChildrenChanged
+      memberName: m3ApplyChildrenDelta
       beforeMethod: propertyChange
       memberSource: |-
         	/*
@@ -52,7 +52,7 @@ recipeList:
         	 * parts follow getModelChildren() over the window where they differ (m3SyncChildren): adding or removing one
         	 * entry touches one edit part instead of a model-to-edit-part map over all of them.
         	 */
-        	private void m3ChildrenChanged(List<PaletteEntry> oldChildren, List<PaletteEntry> newChildren) {
+        	private void m3ApplyChildrenDelta(List<PaletteEntry> oldChildren, List<PaletteEntry> newChildren) {
         		List<PaletteEntry> before = oldChildren == null ? Collections.emptyList() : oldChildren;
         		List<PaletteEntry> after = newChildren == null ? Collections.emptyList() : newChildren;
         		int head = 0;
@@ -79,9 +79,9 @@ recipeList:
       beforeMethod: propertyChange
       memberSource: |-
         	/*
-        	 * Synexia: refreshChildren() over the window where the child edit parts and getModelChildren() differ (common
+        	 * Synexia: the stock children refresh over the window where the child edit parts and getModelChildren() differ (common
         	 * head and tail skipped by a two-pointer diff): edit parts in the window are reused, reordered, created or
-        	 * removed as refreshChildren() would, the others are not visited.
+        	 * removed as the stock refresh would, the others are not visited.
         	 */
         	private void m3SyncChildren() {
         		List<PaletteEntry> model = getModelChildren();
@@ -128,8 +128,8 @@ recipeList:
         {
         		String property = evt.getPropertyName();
         		if (property.equals(PaletteContainer.PROPERTY_CHILDREN)) {
-        			// Synexia (brief rule 24): edit-part deltas over the changed window, no refreshChildren()
-        			m3ChildrenChanged((List<PaletteEntry>) evt.getOldValue(), (List<PaletteEntry>) evt.getNewValue());
+        			// Synexia (brief rule 24): edit-part deltas over the changed window, no refresh of every child
+        			m3ApplyChildrenDelta((List<PaletteEntry>) evt.getOldValue(), (List<PaletteEntry>) evt.getNewValue());
         		} else if (property.equals(PaletteEntry.PROPERTY_LABEL) || property.equals(PaletteEntry.PROPERTY_SMALL_ICON)
         				|| property.equals(PaletteEntry.PROPERTY_LARGE_ICON)
         				|| property.equals(PaletteEntry.PROPERTY_DESCRIPTION)) {
@@ -142,11 +142,11 @@ recipeList:
       parameterCount: 1
       anchor: "super.propertyChange(event);"
       position: AFTER
-      statements: "\t\t\tif (org.eclipse.gef.palette.PaletteContainer.PROPERTY_CHILDREN.equals(event.getPropertyName())) {\n\t\t\t\t// Synexia (brief rule 24): what refreshChildren() adds, after the children delta\n\t\t\t\tcheckActiveEntrySync();\n\t\t\t\tgetChildren().stream().filter(ep -> !ep.getFigure().equals(activeFigure))\n\t\t\t\t\t\t.forEach(ep -> ep.getFigure().setVisible(false));\n\t\t\t}"
+      statements: "\t\t\tif (org.eclipse.gef.palette.PaletteContainer.PROPERTY_CHILDREN.equals(event.getPropertyName())) {\n\t\t\t\t// Synexia (brief rule 24): what the stack adds to a children refresh, after the children delta\n\t\t\t\tcheckActiveEntrySync();\n\t\t\t\tgetChildren().stream().filter(ep -> !ep.getFigure().equals(activeFigure))\n\t\t\t\t\t\t.forEach(ep -> ep.getFigure().setVisible(false));\n\t\t\t}"
   - com.synexia.openrewrite.viewport.M3InsertStatements:
       declaringClasses: [org.eclipse.gef.internal.ui.palette.editparts.PinnablePaletteStackEditPart]
       methodName: propertyChange
       parameterCount: 1
       anchor: "super.propertyChange(event);"
       position: AFTER
-      statements: "\t\t\tif (org.eclipse.gef.palette.PaletteContainer.PROPERTY_CHILDREN.equals(event.getPropertyName())) {\n\t\t\t\t// Synexia (brief rule 24): what refreshChildren() adds, after the children delta\n\t\t\t\tcheckActiveEntrySync();\n\t\t\t}"
+      statements: "\t\t\tif (org.eclipse.gef.palette.PaletteContainer.PROPERTY_CHILDREN.equals(event.getPropertyName())) {\n\t\t\t\t// Synexia (brief rule 24): what the stack adds to a children refresh, after the children delta\n\t\t\t\tcheckActiveEntrySync();\n\t\t\t}"

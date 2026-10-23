@@ -408,7 +408,7 @@ public abstract class PaletteEditPart extends AbstractGraphicalEditPart implemen
 	 * parts follow getModelChildren() over the window where they differ (m3SyncChildren): adding or removing one
 	 * entry touches one edit part instead of a model-to-edit-part map over all of them.
 	 */
-	private void m3ChildrenChanged(List<PaletteEntry> oldChildren, List<PaletteEntry> newChildren) {
+	private void m3ApplyChildrenDelta(List<PaletteEntry> oldChildren, List<PaletteEntry> newChildren) {
 		List<PaletteEntry> before = oldChildren == null ? Collections.emptyList() : oldChildren;
 		List<PaletteEntry> after = newChildren == null ? Collections.emptyList() : newChildren;
 		int head = 0;
@@ -431,9 +431,9 @@ public abstract class PaletteEditPart extends AbstractGraphicalEditPart implemen
 	}
 
 	/*
-	 * Synexia: refreshChildren() over the window where the child edit parts and getModelChildren() differ (common
+	 * Synexia: the stock children refresh over the window where the child edit parts and getModelChildren() differ (common
 	 * head and tail skipped by a two-pointer diff): edit parts in the window are reused, reordered, created or
-	 * removed as refreshChildren() would, the others are not visited.
+	 * removed as the stock refresh would, the others are not visited.
 	 */
 	private void m3SyncChildren() {
 		List<PaletteEntry> model = getModelChildren();
@@ -481,8 +481,8 @@ public abstract class PaletteEditPart extends AbstractGraphicalEditPart implemen
 	public void propertyChange(PropertyChangeEvent evt) {
 		String property = evt.getPropertyName();
 		if (property.equals(PaletteContainer.PROPERTY_CHILDREN)) {
-			// Synexia (brief rule 24): edit-part deltas over the changed window, no refreshChildren()
-			m3ChildrenChanged((List<PaletteEntry>) evt.getOldValue(), (List<PaletteEntry>) evt.getNewValue());
+			// Synexia (brief rule 24): edit-part deltas over the changed window, no refresh of every child
+			m3ApplyChildrenDelta((List<PaletteEntry>) evt.getOldValue(), (List<PaletteEntry>) evt.getNewValue());
 		} else if (property.equals(PaletteEntry.PROPERTY_LABEL) || property.equals(PaletteEntry.PROPERTY_SMALL_ICON)
 				|| property.equals(PaletteEntry.PROPERTY_LARGE_ICON)
 				|| property.equals(PaletteEntry.PROPERTY_DESCRIPTION)) {
