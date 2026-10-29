@@ -56,7 +56,7 @@
 		<echo level="info" message="Done." />
 
 		<echo level="info" message="Generating javadoc..." />
-		<exec dir="." executable="${javadoc}" output="doc.bin.log">
+		<exec dir="." executable="${javadoc}" output="doc.bin.log" failonerror="true">
 			<arg line="@${project.build.directory}/${tmp.options.file} -J-Xmx1000M" />
 		</exec>
 		<echo level="info" message="Done." />
