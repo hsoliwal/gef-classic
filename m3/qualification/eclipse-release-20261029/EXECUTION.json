@@ -1,0 +1,93 @@
+{
+  "schema": "SYNEXIA_QUALIFIED_PRODUCT_RESULTS_V1",
+  "repository": "hsoliwal/gef-classic",
+  "baseline_commit": "0a125391e1d9dcdd889eeb0128d00af1134fa0ec",
+  "source_authority": {
+    "repository": "hsoliwal/com.synexia",
+    "commit": "60f0f54df25ba0950171adff4d2d0c9ef61998b3",
+    "review": "https://github.com/hsoliwal/com.synexia/pull/13950",
+    "evidence_path": "synexia-openrewrite-recipes/recipe-crates/m3-ast-build-reverse-20261017/proofs/eclipse-release-20261029"
+  },
+  "recipe_executions": [
+    {
+      "dataset": "gef-current-release-20261029",
+      "recipe": "com.synexia.m3jdk.AstBuildReverse20261017",
+      "sdk_tests": 5,
+      "input_sealing_tests": 12,
+      "receiver_cases": 15,
+      "sdk_inputs_sha256": "a01a2176f62ef8110e8178c95c60bf51cafa411e1b4e818aa53fab42821300f7",
+      "sdk_results_sha256": "d49d11e997577115f17b2db7f692316ca9c2b17709ebc1620216641467a14bb0",
+      "sdk_test_report_sha256": "6b9de34d833d57b5e348e320150c9609e3fdf1290c83f9bc867bcd70d3b2e2c8"
+    }
+  ],
+  "files": [
+    {
+      "path": "org.eclipse.draw2d.doc.isv/build.properties",
+      "source_sha256": "73629c199b9becadeb9b094033ea017b10a92c27a1003cfee26dd0515289680c",
+      "postimage_sha256": "f1562629d1328cf6cdfd67852e32d335bbcd6ec9b4610b27db46833d152cf93c",
+      "mode": "100644",
+      "datasets": [
+        "gef-current-release-20261029"
+      ]
+    },
+    {
+      "path": "org.eclipse.draw2d.doc.isv/buildDoc.xml",
+      "source_sha256": "c026c0afc43abfe677ea8427ff21696d98a3a62e0b35cb07a7497335b5a2dc25",
+      "postimage_sha256": "41774ac1ec7599cf3cbe1faac7f44f7d725e0d4412cc5687c29bbf5e906e977b",
+      "mode": "100644",
+      "datasets": [
+        "gef-current-release-20261029"
+      ]
+    },
+    {
+      "path": "org.eclipse.gef.doc.isv/buildDoc.xml",
+      "source_sha256": "eeacf26642ff692e1b87c58680f6730af4ed378aa7924c8b51c4040a9bf34960",
+      "postimage_sha256": "e7576747d7b45e732f7d27c58476e35df2445993cd95aefe618cf7179e08d1d3",
+      "mode": "100644",
+      "datasets": [
+        "gef-current-release-20261029"
+      ]
+    },
+    {
+      "path": "org.eclipse.zest.doc.isv/buildDoc.xml",
+      "source_sha256": "c026c0afc43abfe677ea8427ff21696d98a3a62e0b35cb07a7497335b5a2dc25",
+      "postimage_sha256": "41774ac1ec7599cf3cbe1faac7f44f7d725e0d4412cc5687c29bbf5e906e977b",
+      "mode": "100644",
+      "datasets": [
+        "gef-current-release-20261029"
+      ]
+    },
+    {
+      "path": "pom.xml",
+      "source_sha256": "cc9512d7a6965cb4d5b1c55d369f53e0ee3d521ca4049a9030f35d2f9e062a5b",
+      "postimage_sha256": "ed716a5fe0c7108cfa3686c697d7e4a3f0c9a02ddba57f04087fc2efdfa26d51",
+      "mode": "100644",
+      "datasets": [
+        "gef-current-release-20261029"
+      ]
+    }
+  ],
+  "recorded_product_gates": {
+    "fullOriginalLinuxVerify": "PASS",
+    "modules": 34,
+    "tests": 9550,
+    "passed": 9546,
+    "skipped": 4,
+    "failed": 0,
+    "errors": 0,
+    "docsOwners": 3,
+    "docErrors": 0,
+    "p2RepositoryAssembled": true,
+    "target": "Eclipse4.42; JDK25 runtime; actual main classfiles remainJava17",
+    "currentHead": "0a125391e1d9dcdd889eeb0128d00af1134fa0ec",
+    "forwardReceiving": [
+      5,
+      5,
+      0
+    ],
+    "forwardEffectiveModelEquivalence": "PASS all5completeactive models; earlier9550-test product build remains separately bound"
+  },
+  "release_status": "DRAFT_REQUIRES_REMAINING_PRODUCT_AND_PLATFORM_GATES",
+  "scope": "This receipt covers exactly the listed qualified source/test/build outputs; source pins and recipe execution are distinct from full product or platform qualification.",
+  "receipt_dataset": "gef-current-receipt-20261029"
+}
