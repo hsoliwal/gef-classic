@@ -337,9 +337,21 @@
 					<module>promotion</module>
 				</modules>
 			</profile>
-			<!-- Empty profile required for GitHub action -->
+			<!-- The moving upstream SDK target requires Java 25 for resolution. -->
+			<!-- Keep the base/2024-09 target and bundle compiler/BREE contracts unchanged. -->
 			<profile>
 				<id>master</id>
+				<build>
+					<plugins>
+						<plugin>
+							<groupId>org.eclipse.tycho</groupId>
+							<artifactId>target-platform-configuration</artifactId>
+							<configuration>
+								<executionEnvironment>JavaSE-25</executionEnvironment>
+							</configuration>
+						</plugin>
+					</plugins>
+				</build>
 			</profile>
 			<profile>
 				<id>2024-09</id>
