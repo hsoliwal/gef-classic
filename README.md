@@ -36,7 +36,7 @@ The JavaFX-based GEF components live in the separate upstream GEF repository.
 
 This is a downstream fork of [Eclipse GEF Classic](https://github.com/eclipse-gef/gef-classic).
 The checkout contains the established frameworks/examples plus an isolated
-[M3 recipe sidecar](.m3/README.md) and source-owned qualification work.
+[M3 recipe sidecar](https://github.com/hsoliwal/com.synexia/blob/develop/forks/gef-classic/.m3/README.md) and source-owned qualification work.
 The [development guide](docs/DEVELOPMENT_GUIDE.md) documents the actual layer,
 test and lifecycle boundaries. The M3 direction below is a research programme;
 the existence of tooling or tests does not certify performance, undo/redo
