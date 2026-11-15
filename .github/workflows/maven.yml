@@ -3,21 +3,50 @@ name: GEF Class verification build
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions: {}
 
 jobs:
   build:
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         java: [ 25 ]
         os: [ubuntu-latest, windows-latest, macos-latest]
         target: [2024-09, master]
+        include:
+          - { java: 21, os: ubuntu-latest, target: 2024-09 }
+          - { java: 21, os: windows-latest, target: 2024-09 }
+          - { java: 21, os: macos-latest, target: 2024-09 }
     runs-on: ${{ matrix.os }} 
-    name: OS ${{ matrix.os }} Target ${{ matrix.target }} compile
+    name: Java ${{ matrix.java }} OS ${{ matrix.os }} Target ${{ matrix.target }} verify
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Check out the shared test-report verifier
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: hsoliwal/eclipse.platform.swt
+        ref: 1202ab304c3b81b73b628d201b987941d16c94d2
+        path: .release-tools/swt
+        sparse-checkout: tools/release/readiness.py
+        sparse-checkout-cone-mode: false
+        persist-credentials: false
+    - name: Keep the verifier outside the product reactor
+      shell: bash
+      run: |
+        mv .release-tools/swt "$RUNNER_TEMP/swt-release-tools"
+        rmdir .release-tools
+        test "$(git -C "$RUNNER_TEMP/swt-release-tools" rev-parse HEAD)" = 1202ab304c3b81b73b628d201b987941d16c94d2
+    - name: Set up test-report validation
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      with:
+        python-version: '3.11'
     - name: Set up Java ${{ matrix.java }}
       uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
       with:
@@ -32,12 +61,53 @@ jobs:
       uses: coactions/setup-xvfb@b6b4fcfb9f5a895edadc3bc76318fae0ac17c8b3 # v1.0.1
       with:
        run: >- 
-        mvn -V -B -fae -ntp -P${{ matrix.target }} clean verify
+        mvn -V -B -fae -ntp -P${{ matrix.target }}
+        -DskipTests=false -Dmaven.test.skip=false -Dmaven.test.failure.ignore=false
+        -DfailIfNoTests=true -Dtycho.baseline.replace=none clean verify
+    - name: Require successful executed tests from each test bundle
+      shell: bash
+      run: |
+        python - <<'PY'
+        import importlib.util
+        import json
+        import os
+        from pathlib import Path
+
+        source = Path(os.environ['RUNNER_TEMP']) / 'swt-release-tools/tools/release/readiness.py'
+        spec = importlib.util.spec_from_file_location('swt_readiness', source)
+        verifier = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(verifier)
+        seen_files = set()
+        for name in ('org.eclipse.draw2d.tests', 'org.eclipse.gef.tests', 'org.eclipse.zest.tests'):
+            counts = verifier.junit_report(Path(name) / 'target/surefire-reports', seen_files)
+            if counts['failures'] or counts['errors']:
+                raise SystemExit('Failed tests: ' + name)
+            print(json.dumps({'bundle': name, **counts}))
+        PY
+    - name: Record the verified source and toolchain
+      if: always()
+      shell: bash
+      run: |
+        {
+          git rev-parse HEAD
+          git rev-parse 'HEAD^{tree}'
+          java -version 2>&1
+          mvn -version
+          git -C "$RUNNER_TEMP/swt-release-tools" rev-parse HEAD
+          python -c 'import hashlib, os; from pathlib import Path; p = Path(os.environ["RUNNER_TEMP"]) / "swt-release-tools/tools/release/readiness.py"; print("REPORT_PARSER_SHA256=" + hashlib.sha256(p.read_bytes()).hexdigest())'
+        } > "$RUNNER_TEMP/gef-source.txt"
+    - name: Upload Source and Toolchain
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: source-java-${{ matrix.java }}-${{ matrix.os }}-target-${{ matrix.target }}-attempt-${{ github.run_attempt }}
+        if-no-files-found: error
+        path: ${{ runner.temp }}/gef-source.txt
     - name: Upload Test Results for Java-${{ matrix.java }}
       if: always()
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
-        name: test-results-${{ matrix.os }}-target-${{ matrix.target }}
+        name: test-results-java-${{ matrix.java }}-${{ matrix.os }}-target-${{ matrix.target }}-attempt-${{ github.run_attempt }}
         if-no-files-found: error
         path: |
           ${{ github.workspace }}/**/target/surefire-reports/*.xml
