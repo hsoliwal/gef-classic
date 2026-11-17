@@ -73,14 +73,14 @@ public class Geometry {
 		long p2p3_y = (long) y2 - y3;
 		long p3p4_x = (long) x3 - x4;
 		long p3p4_y = (long) y3 - y4;
-		if (productSign(crossProduct(p2p3_x, p2p3_y, p3p4_x, p3p4_y),
-				crossProduct(p3p4_x, p3p4_y, p1p3_x, p1p3_y)) >= 0) {
+		if (productSign(crossProductSign(p2p3_x, p2p3_y, p3p4_x, p3p4_y),
+				crossProductSign(p3p4_x, p3p4_y, p1p3_x, p1p3_y)) >= 0) {
 			long p2p1_x = (long) x2 - x1;
 			long p2p1_y = (long) y2 - y1;
 			long p1p4_x = (long) x1 - x4;
 			long p1p4_y = (long) y1 - y4;
-			return productSign(crossProduct(-p1p3_x, -p1p3_y, p2p1_x, p2p1_y),
-					crossProduct(p2p1_x, p2p1_y, p1p4_x, p1p4_y)) <= 0;
+			return productSign(crossProductSign(-p1p3_x, -p1p3_y, p2p1_x, p2p1_y),
+					crossProductSign(p2p1_x, p2p1_y, p1p4_x, p1p4_y)) <= 0;
 		}
 		return false;
 	}
@@ -95,8 +95,20 @@ public class Geometry {
 		return 1;
 	}
 
-	private static long crossProduct(long x1, long y1, long x2, long y2) {
-		return x1 * y2 - x2 * y1;
+	/**
+	 * Returns the exact sign of a 2D determinant for full-width int coordinate
+	 * differences. Each multiplication is retained as signed high/low words,
+	 * avoiding long overflow without allocating BigInteger objects.
+	 */
+	private static int crossProductSign(long x1, long y1, long x2, long y2) {
+		long firstLow = x1 * y2;
+		long secondLow = x2 * y1;
+		long high = Math.multiplyHigh(x1, y2) - Math.multiplyHigh(x2, y1);
+		if (Long.compareUnsigned(firstLow, secondLow) < 0) {
+			high--;
+		}
+		long low = firstLow - secondLow;
+		return high < 0 ? -1 : (high != 0 || low != 0 ? 1 : 0);
 	}
 
 	/**

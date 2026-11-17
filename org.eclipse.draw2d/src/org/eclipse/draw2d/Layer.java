@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Synexia, Hitesh Soliwal - Draw2d viewport mode hooks (child index)
  *******************************************************************************/
 package org.eclipse.draw2d;
 
@@ -36,6 +37,10 @@ public class Layer extends Figure {
 		translateFromParent(pt);
 		x = pt.x;
 		y = pt.y;
+		org.eclipse.draw2d.internal.m3.M3FigureChildren m3 = m3ChildIndex();
+		if (m3 != null) {
+			return m3.containsPoint(x, y);
+		}
 		for (IFigure child : getChildren()) {
 			if (child.containsPoint(x, y)) {
 				return true;

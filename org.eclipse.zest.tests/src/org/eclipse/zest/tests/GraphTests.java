@@ -16,9 +16,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Shell;
 
 import org.eclipse.zest.core.widgets.Graph;
@@ -27,6 +32,9 @@ import org.eclipse.zest.core.widgets.GraphContainer;
 import org.eclipse.zest.core.widgets.GraphItem;
 import org.eclipse.zest.core.widgets.GraphNode;
 import org.eclipse.zest.core.widgets.ZestStyles;
+import org.eclipse.zest.core.widgets.internal.GraphLabel;
+import org.eclipse.zest.core.widgets.internal.GraphLightweightSystem;
+import org.eclipse.zest.core.widgets.internal.ImageRegistry;
 import org.eclipse.zest.core.widgets.internal.ZestRootLayer;
 import org.eclipse.zest.layouts.interfaces.LayoutContext;
 import org.eclipse.zest.tests.utils.SWTBotGraph;
@@ -36,6 +44,7 @@ import org.eclipse.draw2d.IFigure;
 import org.eclipse.draw2d.ScalableFigure;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.Rectangle;
+import org.eclipse.draw2d.SWTGraphics;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,6 +130,31 @@ public class GraphTests {
 		assertTrue(connection.isDisposed(), "Connection should be disposed"); //$NON-NLS-1$
 		graph.dispose();
 		assertTrue(graph.isDisposed(), "Graph should be disposed"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testDisposeCachedLabel() throws Exception {
+		GraphLabel label = new GraphLabel("Test", true); //$NON-NLS-1$
+		graph.getRootLayer().add(label);
+
+		GC gc = new GC(shell);
+		SWTGraphics graphics = new SWTGraphics(gc);
+		label.paint(graphics);
+		graphics.dispose();
+		gc.dispose();
+
+		Map<String, Image> registry = getCachedImages();
+		assertEquals(1, registry.size());
+		graph.dispose();
+		assertTrue(registry.isEmpty());
+	}
+
+	private Map<String, Image> getCachedImages() throws Exception {
+		MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(ImageRegistry.class, MethodHandles.lookup());
+		VarHandle handle = lookup.findVarHandle(ImageRegistry.class, "registry", Map.class); //$NON-NLS-1$
+
+		ImageRegistry registry = ((GraphLightweightSystem) graph.getLightweightSystem()).internalGetImageRegistry();
+		return (Map<String, Image>) handle.get(registry);
 	}
 
 	/**
