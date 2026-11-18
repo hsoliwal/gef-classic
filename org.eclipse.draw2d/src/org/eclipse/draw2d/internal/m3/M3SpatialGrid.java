@@ -243,7 +243,7 @@ public final class M3SpatialGrid {
 					return -1;
 				}
 				if (2 * (cellsUsed + 1) > cellKey.length) {
-					growCells();
+					rehashCells();
 					return cell(key, true);
 				}
 				cellKey[i] = key;
@@ -268,11 +268,21 @@ public final class M3SpatialGrid {
 		usedBits[i >>> 6] |= 1L << i;
 	}
 
-	private void growCells() {
+	private void rehashCells() {
 		long[] oldKey = cellKey;
 		int[] oldHead = cellHead;
 		long[] oldUsed = usedBits;
-		int size = oldKey.length * 2;
+		int liveCells = 0;
+		for (int i = 0; i < oldKey.length; i++) {
+			if ((oldUsed[i >>> 6] & (1L << i)) != 0 && oldHead[i] >= 0) {
+				liveCells++;
+			}
+		}
+		// Removed rectangles leave used hash slots behind. Reclaim those slots
+		// when they dominate, instead of doubling storage for each new position
+		// of a small moving figure set. At most one quarter of the table remains
+		// occupied after compaction, so subsequent moves amortize the scan.
+		int size = (long) liveCells * 4 <= oldKey.length ? oldKey.length : oldKey.length * 2;
 		cellKey = new long[size];
 		cellHead = new int[size];
 		Arrays.fill(cellHead, -1);

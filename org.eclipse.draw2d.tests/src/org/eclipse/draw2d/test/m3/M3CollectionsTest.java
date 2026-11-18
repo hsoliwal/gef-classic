@@ -139,6 +139,32 @@ public class M3CollectionsTest {
 	}
 
 	@Test
+	public void gridReclaimsVacantCellsDuringRepeatedMoves() throws Exception {
+		M3SpatialGrid grid = new M3SpatialGrid(5);
+		for (int slot = 0; slot < 7; slot++) {
+			grid.put(slot, slot * 64, 0, 4, 4);
+		}
+		for (int move = 0; move < 8192; move++) {
+			int x = 4096 + move * 64;
+			grid.put(7, x, 0, 4, 4);
+			assertEquals(1, grid.queryPoint(x + 1, 1));
+			assertEquals(7, grid.result().get(0));
+			if (move > 0) {
+				assertEquals(0, grid.queryPoint(x - 63, 1));
+			}
+		}
+		for (int slot = 0; slot < 7; slot++) {
+			assertEquals(1, grid.queryPoint(slot * 64 + 1, 1));
+			assertEquals(slot, grid.result().get(0));
+		}
+		assertEquals(8, grid.size());
+		Field cellKey = M3SpatialGrid.class.getDeclaredField("cellKey"); //$NON-NLS-1$
+		cellKey.setAccessible(true);
+		assertTrue(((long[]) cellKey.get(grid)).length <= 128,
+				"moving a fixed set must not retain a cell for every old position"); //$NON-NLS-1$
+	}
+
+	@Test
 	public void slotsMatchModel() {
 		SplittableRandom r = new SplittableRandom(5);
 		M3ChildSlots slots = new M3ChildSlots();
