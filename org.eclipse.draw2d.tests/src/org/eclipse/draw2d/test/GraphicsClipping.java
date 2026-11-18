@@ -18,6 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.ImageData;
+
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
@@ -166,6 +170,52 @@ public abstract class GraphicsClipping {
 		@Override
 		protected Graphics createGraphics() {
 			return new SWTGraphics(gc);
+		}
+
+		/**
+		 * Exercise the real SWT GC underneath Draw2D: clip, nested clip, state
+		 * restoration and pixel delivery remain native-backend responsibilities.
+		 * This is an offscreen SWT Image oracle, not a visible compositor proof.
+		 */
+		@Test
+		public void testNativeGcNestedClipPixelsAndRestore() {
+			Display display = Display.getDefault();
+			Color red = display.getSystemColor(SWT.COLOR_RED);
+			Color blue = display.getSystemColor(SWT.COLOR_BLUE);
+			Color green = display.getSystemColor(SWT.COLOR_GREEN);
+			Color yellow = display.getSystemColor(SWT.COLOR_YELLOW);
+			gc.setBackground(red);
+			gc.fillRectangle(0, 0, 48, 48);
+
+			SWTGraphics drawing = new SWTGraphics(gc);
+			try {
+				drawing.setClip(new Rectangle(8, 8, 24, 24));
+				drawing.setBackgroundColor(blue);
+				drawing.fillRectangle(new Rectangle(0, 0, 48, 48));
+				drawing.pushState();
+				drawing.clipRect(new Rectangle(16, 16, 8, 8));
+				drawing.setBackgroundColor(green);
+				drawing.fillRectangle(new Rectangle(0, 0, 48, 48));
+				drawing.popState();
+				drawing.setBackgroundColor(yellow);
+				drawing.fillRectangle(new Rectangle(10, 10, 4, 4));
+			} finally {
+				drawing.dispose();
+			}
+
+			ImageData pixels = image.getImageData();
+			assertPixel(pixels, 7, 7, red);
+			assertPixel(pixels, 8, 8, blue);
+			assertPixel(pixels, 11, 11, yellow);
+			assertPixel(pixels, 16, 16, green);
+			assertPixel(pixels, 23, 23, green);
+			assertPixel(pixels, 24, 24, blue);
+			assertPixel(pixels, 32, 32, red);
+		}
+
+		private static void assertPixel(ImageData pixels, int x, int y, Color expected) {
+			assertEquals(expected.getRGB(), pixels.palette.getRGB(pixels.getPixel(x, y)),
+					"SWT GC clipped pixel at " + x + "," + y); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 
 		@Override
