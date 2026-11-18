@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: EPL-2.0
+name: Diagnose existing GEF nested JUnit report aggregates
+on:
+  push:
+    branches: [ci/diagnose-draw2d-junit-aggregation-20261118]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect-executed-report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact executed Windows Java21 Tycho report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 44275363429 --repo hsoliwal/gef-classic \
+            --name test-results-java-21-windows-latest-target-2024-09-attempt-1 \
+            --dir report
+      - name: Examine suite hierarchy, duplicate testcase identities, and declared counters
+        run: |
+          python - <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          import hashlib
+          import xml.etree.ElementTree as ET
+          reports = sorted(Path('report').rglob('TEST-*.xml'))
+          if not reports:
+              raise SystemExit('No actual executed JUnit XML reports downloaded')
+          for f in reports:
+              data = f.read_bytes()
+              root = ET.fromstring(data)
+              cases = list(root.iter('testcase'))
+              direct = root.findall('testcase')
+              groups = list(root.iter('testsuite'))
+              identity = [(c.get('classname'), c.get('name')) for c in cases]
+              duplicates = sum(n - 1 for n in Counter(identity).values() if n > 1)
+              outer = {k: root.get(k) for k in ('tests','failures','errors','skipped')}
+              leaf = [g for g in groups if not list(g.iter('testsuite'))[1:]]
+              print('REPORT', f.as_posix())
+              print(' sha256', hashlib.sha256(data).hexdigest())
+              print(' root', root.tag, 'declared', outer,
+                    'testcases_recursive', len(cases),
+                    'testcases_direct', len(direct),
+                    'nested_suites', max(0, len(groups) - 1),
+                    'leaf_suites', len(leaf),
+                    'duplicate_testcase_names', duplicates)
+              print(' first-level suite counts',
+                    [(g.get('name'), g.get('tests'),
+                      len(list(g.iter('testcase'))))
+                     for g in list(root) if g.tag == 'testsuite'][:20])
+              print(' exact duplicated names', [(name, n)
+                    for name, n in Counter(identity).most_common(5) if n > 1])
+              if not cases:
+                  raise SystemExit('A test bundle supplied zero testcases: ' + str(f))
+          PY
