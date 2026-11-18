@@ -102,24 +102,26 @@ public final class ManhattanConnectionRouter extends AbstractRouter {
 	 */
 	@SuppressWarnings("static-method")
 	protected Vector getDirection(Rectangle r, Point p) {
-		int distance = Math.abs(r.x - p.x);
+		// Convert to long before subtracting: int overflow (including MIN_VALUE)
+		// can choose the wrong anchor side on large diagrams.
+		long distance = Math.abs((long) r.x - p.x);
 		Vector direction;
 
 		direction = LEFT;
 
-		int i = Math.abs(r.y - p.y);
+		long i = Math.abs((long) r.y - p.y);
 		if (i <= distance) {
 			distance = i;
 			direction = UP;
 		}
 
-		i = Math.abs(r.bottom() - p.y);
+		i = Math.abs((long) r.bottom() - p.y);
 		if (i <= distance) {
 			distance = i;
 			direction = DOWN;
 		}
 
-		i = Math.abs(r.right() - p.x);
+		i = Math.abs((long) r.right() - p.x);
 		if (i < distance) {
 			direction = RIGHT;
 		}

@@ -63,6 +63,7 @@ import org.junit.platform.suite.api.Suite;
 	RelativeBendpointTest.class,
 	GeometryTest.class,
 	GeometryLineIntersectionOverflowTest.class,
+	ManhattanConnectionExtremeDirectionTest.class,
 	ScalablePolygonShapeTest.class,
 	LayerTest.class,
 	ShapeTest.class,
