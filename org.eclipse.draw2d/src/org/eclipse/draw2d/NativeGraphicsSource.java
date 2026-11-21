@@ -15,6 +15,8 @@ package org.eclipse.draw2d;
 
 import org.eclipse.swt.widgets.Control;
 
+import org.eclipse.draw2d.internal.NativeDamageRegions;
+
 import org.eclipse.draw2d.geometry.Rectangle;
 
 /**
@@ -66,6 +68,21 @@ public final class NativeGraphicsSource implements GraphicsSource {
 			canvas.getDisplay().readAndDispatch();
 		}
 		return null;
+	}
+
+	/**
+	 * Optional sparse native invalidation; the OS retains the dirty region.
+	 * Call only after the update manager has proved an exact envelope match.
+	 * This intentionally does not manufacture a GC or retain native handles.
+	 */
+	void redrawRegions(NativeDamageRegions regions) {
+		for (int i = 0; i < regions.size(); i++) {
+			canvas.redraw(regions.x(i), regions.y(i), regions.width(i), regions.height(i), false);
+		}
+		// Match getGraphics' animation dispatch once after all invalidations.
+		if (Animation.isAnimating()) {
+			canvas.getDisplay().readAndDispatch();
+		}
 	}
 
 	/**
