@@ -23,6 +23,7 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.widgets.Display;
 
 import org.eclipse.draw2d.geometry.Rectangle;
+import org.eclipse.draw2d.internal.NativeDamageRegions;
 
 /**
  * An UpdateManager that asynchronously updates the affected figures.
@@ -47,7 +48,9 @@ public class DeferredUpdateManager extends UpdateManager {
 		}
 	}
 
+	private static final boolean SPARSE_NATIVE_DAMAGE = Boolean.getBoolean("draw2d.native.sparseDamage");
 	private Rectangle damage;
+	private NativeDamageRegions nativeDamage;
 	private Map<IFigure, Rectangle> dirtyRegions = new HashMap<>();
 
 	private GraphicsSource graphicsSource;
@@ -275,6 +278,22 @@ public class DeferredUpdateManager extends UpdateManager {
 		Map<IFigure, Rectangle> oldRegions = dirtyRegions;
 		dirtyRegions = new HashMap<>();
 
+		// Preserve all protected/subclass hooks, stock drawing and the default path.
+		// Retain the primitive scratch only for exact-class native consumers.
+		boolean eligible = SPARSE_NATIVE_DAMAGE && getClass() == DeferredUpdateManager.class
+				&& graphicsSource instanceof NativeGraphicsSource;
+		GraphicsSource source = graphicsSource;
+		IFigure rootAtStart = root;
+		NativeDamageRegions batch = null;
+		if (eligible) {
+			if (nativeDamage == null) {
+				nativeDamage = new NativeDamageRegions();
+			}
+			nativeDamage.clear();
+			batch = nativeDamage;
+		}
+		final NativeDamageRegions candidate = batch;
+
 		oldRegions.forEach((figure, contribution) -> {
 			IFigure walker = figure.getParent();
 			// A figure can't paint beyond its own bounds
@@ -283,6 +302,9 @@ public class DeferredUpdateManager extends UpdateManager {
 				walker.translateToParent(contribution);
 				contribution.intersect(walker.getBounds());
 				walker = walker.getParent();
+			}
+			if (candidate != null && !contribution.isEmpty()) {
+				candidate.add(contribution.x, contribution.y, contribution.width, contribution.height);
 			}
 			// Empty clips carry no paintable area into the aggregate.
 			if (damage == null || (damage.isEmpty() && !contribution.isEmpty())) {
@@ -297,10 +319,17 @@ public class DeferredUpdateManager extends UpdateManager {
 		}
 
 		if (damage != null && !damage.isEmpty()) {
-			Graphics graphics = getGraphics(damage);
-			if (graphics != null) {
-				root.paint(graphics);
-				releaseGraphics(graphics);
+			// Listener mutations or a GraphicsSource replacement must fall back.
+			boolean split = candidate != null && graphicsSource == source && root == rootAtStart
+					&& candidate.shouldSplit(damage.x, damage.y, damage.width, damage.height);
+			if (split) {
+				((NativeGraphicsSource) source).redrawRegions(candidate);
+			} else {
+				Graphics graphics = getGraphics(damage);
+				if (graphics != null) {
+					root.paint(graphics);
+					releaseGraphics(graphics);
+				}
 			}
 		}
 		damage = null;
