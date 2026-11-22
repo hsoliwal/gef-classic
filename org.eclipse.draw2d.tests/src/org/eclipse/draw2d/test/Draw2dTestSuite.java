@@ -42,6 +42,7 @@ import org.junit.platform.suite.api.Suite;
 	PaintDamageEraseTest.class,
 	DeferredUpdateManagerDamageTest.class,
 	NativeDamageRegionsTest.class,
+	NativeSparseDamageSwtTest.class,
 	LayeredPaneTest.class,
 	ConnectionEndPointMoveTest.class,
 	ImageUtilitiesTest.class,

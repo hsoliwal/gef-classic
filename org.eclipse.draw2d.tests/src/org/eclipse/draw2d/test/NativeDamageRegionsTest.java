@@ -63,6 +63,24 @@ public class NativeDamageRegionsTest {
 	}
 
 	@Test
+	void signedBoundaryRectanglesNeverOverflowTheAreaPolicy() {
+		NativeDamageRegions batch = new NativeDamageRegions();
+		batch.add(Integer.MIN_VALUE, Integer.MIN_VALUE, 10, 10);
+		batch.add(-1000, -1000, 10, 10);
+		assertFalse(batch.shouldSplit(Integer.MIN_VALUE, Integer.MIN_VALUE,
+				Integer.MAX_VALUE, Integer.MAX_VALUE));
+		batch.clear();
+		batch.add(Integer.MAX_VALUE - 3, Integer.MAX_VALUE - 3, 3, 3);
+		batch.add(0, 0, 1, 1);
+		assertTrue(batch.shouldSplit(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE));
+		batch.clear();
+		batch.add(Integer.MIN_VALUE, 0, Integer.MAX_VALUE, 10);
+		batch.add(0, 10, 1, Integer.MAX_VALUE - 10);
+		assertFalse(batch.shouldSplit(Integer.MIN_VALUE, 0, Integer.MAX_VALUE,
+				Integer.MAX_VALUE));
+	}
+
+	@Test
 	void seededEnvelopePolicyMatchesIndependentLongArithmetic() {
 		NativeDamageRegions batch = new NativeDamageRegions();
 		Random random = new Random(0xD2D20261121L);
