@@ -133,6 +133,8 @@ jobs:
         with:
           maven-version: 3.9.12
       - name: Execute real native SWT Canvas test with sparse mode enabled
+        env:
+          DRAW2D_SPARSE_NATIVE_REQUIRED: 'true'
         uses: coactions/setup-xvfb@b6b4fcfb9f5a895edadc3bc76318fae0ac17c8b3 # v1.0.1
         with:
           run: >-

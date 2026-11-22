@@ -71,6 +71,11 @@ public class NativeSparseDamageSwtTest {
             manager.performUpdate();
 
             boolean sparse = Boolean.getBoolean("draw2d.native.sparseDamage");
+            // Independent environment marker from CI prevents a false opt-in PASS
+            // if Tycho accidentally omits the JVM -D option from the test fork.
+            if ("true".equals(System.getenv("DRAW2D_SPARSE_NATIVE_REQUIRED"))) {
+                assertEquals(true, sparse);
+            }
             if (sparse) {
                 assertEquals(2, canvas.requested.size());
                 // HashMap iteration order is unspecified: compare sets, not order.
