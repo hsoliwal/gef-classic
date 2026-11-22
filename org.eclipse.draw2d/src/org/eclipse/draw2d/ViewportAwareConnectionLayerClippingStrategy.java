@@ -124,21 +124,13 @@ public class ViewportAwareConnectionLayerClippingStrategy implements IClippingSt
 		boolean targetAnchorVisible = targetClipRect.getExpanded(PRIVATE_INSETS)
 				.contains(absolutePointsAsCopy.getLastPoint());
 
-		if (!sourceAnchorVisible || !targetAnchorVisible) {
-			// one (or both) of source or target anchor is invisible
-			// within the nearest common viewport, so up to now
-			// we regard the edge as invisible.
+		if ((!sourceAnchorVisible && !absolutePointsAsCopy.intersects(sourceClipRect))
+				|| (!targetAnchorVisible && !absolutePointsAsCopy.intersects(targetClipRect))) {
+			// A hidden anchor alone does not hide a segment crossing a nested
+			// viewport. Test the actual polyline, not only its bounding box.
 			return new Rectangle[] {};
-			// TODO: We could come up with a more decent strategy here,
-			// which also computes clipping fragments in those cases
-			// where source/target are not visible but the edge
-			// intersects with the enclosing source/target viewport's
-			// parents bounds.
-
 		}
-		// both ends are visible, so just return what we have
-		// computed before
-		// (clipping at nearest enclosing viewport)
+		// Preserve the common-viewport rectangle; fragment masks are separate work.
 		return new Rectangle[] { clipRect };
 	}
 

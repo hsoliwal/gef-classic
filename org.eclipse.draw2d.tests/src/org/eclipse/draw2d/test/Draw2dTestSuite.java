@@ -43,6 +43,7 @@ import org.junit.platform.suite.api.Suite;
 	DeferredUpdateManagerDamageTest.class,
 	LayeredPaneTest.class,
 	ConnectionEndPointMoveTest.class,
+	ViewportConnectionClipTest.class,
 	ImageUtilitiesTest.class,
 	LookAheadTest.class,
 	TextualTests.class,
