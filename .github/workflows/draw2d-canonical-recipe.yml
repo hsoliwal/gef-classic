@@ -1,0 +1,103 @@
+name: Draw2D canonical Synexia recipe Java21 proof
+
+on:
+  push:
+    branches:
+      - work/draw2d-native-sparse-damage-20261121
+  pull_request:
+    paths:
+      - '.github/workflows/draw2d-canonical-recipe.yml'
+      - 'org.eclipse.draw2d/src/org/eclipse/draw2d/**'
+      - 'org.eclipse.draw2d.tests/src/org/eclipse/draw2d/test/**'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  synexia-source-receipt:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout GEF receiver
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: gef
+      - name: Checkout immutable canonical Synexia source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hsoliwal/com.synexia
+          ref: b77a4f09b5638c5f8434bb8e78e9b2f32c1b859d
+          path: synexia
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /synexia-openrewrite-recipes/src/main/java/com/synexia/rewrite/
+            /synexia-openrewrite-recipes/src/main/resources/com/synexia/rewrite/hash-pinned-java/gef-native-sparse-damage-20261121/
+            /synexia-openrewrite-recipes/recipe-crates/gef-native-sparse-damage-20261121/
+      - name: Verify canonical source commit and exact receiving postimages
+        shell: bash
+        run: |
+          test "$(git -C synexia rev-parse HEAD)" = "b77a4f09b5638c5f8434bb8e78e9b2f32c1b859d"
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root = Path('synexia/synexia-openrewrite-recipes/src/main/resources/com/synexia/rewrite/hash-pinned-java/gef-native-sparse-damage-20261121')
+          manifest = root / 'manifest.tsv'
+          lines = manifest.read_text(encoding='utf-8').splitlines()
+          assert len(lines) == 7, 'require exactly six source owners'
+          assert lines[0] == '# path\tbefore_sha256\tafter_sha256\ttemplate'
+          for line in lines[1:]:
+              path, before, after, template = line.split('\t')
+              candidate = (Path('gef') / path).read_bytes()
+              rendered = (root / template).read_bytes()
+              digest = hashlib.sha256(candidate).hexdigest()
+              assert digest == after, (path, digest, after)
+              assert candidate == rendered, ('exact receiving bytes differ', path)
+              if before != 'ABSENT':
+                  original = (root / 'pre' / template).read_bytes()
+                  assert hashlib.sha256(original).hexdigest() == before, path
+          print('Canonical source-byte receipts: 6/6 PASS')
+          PY
+      - name: Set up Java 21
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Execute original Synexia OpenRewrite Maven proof
+        shell: bash
+        run: |
+          java -version
+          mvn -B -ntp -f synexia/synexia-openrewrite-recipes/recipe-crates/gef-native-sparse-damage-20261121/pom.xml test
+      - name: Admit genuine executed JUnit5 source recipe cases
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          reports = Path('synexia/synexia-openrewrite-recipes/recipe-crates/gef-native-sparse-damage-20261121/target/surefire-reports')
+          matches = sorted(reports.glob('TEST-*GefNativeSparseDamage20261121Test.xml'))
+          if len(matches) != 1:
+              raise SystemExit(f'Expected one real receipt report: {matches}')
+          xml = ET.parse(matches[0]).getroot()
+          cases = xml.findall('testcase')
+          names = {case.attrib.get('name') for case in cases}
+          required = {'exactFiveJavaLSTOutputsAndFixedPoint', 'driftAndMissingOwnerRefused'}
+          if names != required or len(cases) != 2:
+              raise SystemExit(f'Missing/duplicate recipe cases: {names}, {len(cases)}')
+          for case in cases:
+              if any(case.find(tag) is not None for tag in ('failure', 'error', 'skipped')):
+                  raise SystemExit(f'Failed/skipped actual source recipe: {case.attrib}')
+          if int(xml.attrib.get('tests', '-1')) != 2:
+              raise SystemExit('Incorrect recipe report count')
+          print('Genuine Synexia Java21 OpenRewrite receipt: 2/2 PASS')
+          PY
+      - name: Keep canonical Maven receipt on failure or success
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: draw2d-synexia-source-recipe-jdk21
+          if-no-files-found: warn
+          path: synexia/synexia-openrewrite-recipes/recipe-crates/gef-native-sparse-damage-20261121/target/surefire-reports/*
