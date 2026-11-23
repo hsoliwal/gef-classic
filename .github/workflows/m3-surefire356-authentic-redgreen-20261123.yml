@@ -1,0 +1,161 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Original Apache Surefire 3.5.6 reporter real JUnit RED GREEN
+
+on:
+  push:
+    branches: [proof/surefire356-junit-redgreen-20261123]
+  pull_request:
+    paths:
+      - 'tests/m3/surefire356-authentic/**'
+      - '.github/workflows/m3-surefire356-authentic-redgreen-20261123.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-surefire-356-red-green:
+    if: github.repository == 'hsoliwal/gef-classic'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - name: Checkout review-only GEF proof fixtures
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up OpenJDK 21
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Set up Maven 3.9.12
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+        with:
+          maven-version: 3.9.12
+      - name: Checkout exact authentic upstream Apache Surefire 3.5.6 release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: apache/maven-surefire
+          ref: 25ea054860a5c1e5932b360d8aa0a31944c2b841
+          path: '.m3-surefire356/upstream'
+          persist-credentials: false
+      - name: Admit upstream exact preimages and apply only new JUnit3 test
+        shell: bash
+        run: |
+          set -euo pipefail
+          original=.m3-surefire356/upstream
+          test "$(git -C "$original" rev-parse HEAD)" = 25ea054860a5c1e5932b360d8aa0a31944c2b841
+          test -z "$(git -C "$original" status --porcelain)"
+          (
+            cd "$original"
+            printf '%s  %s\n' \
+              42b24e48035ed5e5e6dea2d960b38ef6a92faee6c1caf8234fdc74cc79fa57f8 'maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java' \
+              83b5c60d098b7f5c29a607e7049742dac4930b6a9c640e38f32d844b66cc6088 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java' \
+              | sha256sum --check --status
+          )
+          git -C "$original" apply --check "$GITHUB_WORKSPACE/tests/m3/surefire356-authentic/StatelessXmlReporterTest.patch"
+          git -C "$original" apply "$GITHUB_WORKSPACE/tests/m3/surefire356-authentic/StatelessXmlReporterTest.patch"
+          (
+            cd "$original"
+            printf '%s  %s\n' \
+              7f6583143f9931a3f6bc17c41db703599c03ea21aa974d4bb032e836ee7b10a7 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java' \
+              | sha256sum --check --status
+          )
+          test "$(git -C "$original" diff --name-only)" = 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java'
+          git -C "$original" diff --check
+          echo 'EXACT_ORIGINAL_SUREFIRE_356_AND_SOURCE_SEALED_JUNIT_PASS'
+      - name: Execute actual original unmodified reporter and require expected RED JUnit
+        shell: bash
+        run: |
+          set -euo pipefail
+          original=.m3-surefire356/upstream
+          proof="$RUNNER_TEMP/surefire356-authentic"
+          mkdir -p "$proof"
+          set +e
+          mvn -B -ntp -f "$original/pom.xml" -pl maven-surefire-common -am \
+            '-Dtest=StatelessXmlReporterTest#testCountsRepeatedMethodNameInvocationsInXml' \
+            -Dsurefire.failIfNoSpecifiedTests=false test \
+            > "$proof/baseline-red-maven.log" 2>&1
+          rc=$?
+          set -e
+          echo "$rc" > "$proof/baseline-maven-exit-code.txt"
+          if test "$rc" -eq 0; then
+            tail -n 80 "$proof/baseline-red-maven.log"
+            echo 'REFUSED: original reporter unexpectedly green'
+            exit 1
+          fi
+          cp -- "$original/maven-surefire-common/target/surefire-reports/TEST-org.apache.maven.plugin.surefire.report.StatelessXmlReporterTest.xml" \
+            "$proof/baseline-red.xml"
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          p = Path(__import__('os').environ['RUNNER_TEMP'])/'surefire356-authentic/baseline-red.xml'
+          root = ET.parse(p).getroot()
+          cases = list(root.iter('testcase'))
+          assert len(cases) == 1 and cases[0].get('name') == 'testCountsRepeatedMethodNameInvocationsInXml', 'wrong/no executed test'
+          failure = cases[0].find('failure')
+          assert failure is not None, 'expected original reporter JUnit failure'
+          diagnostic = (failure.get('message') or '') + ' ' + (failure.text or '')
+          assert all(part in diagnostic for part in ('expected', '2', '1')), diagnostic[:500]
+          assert (root.get('tests'), root.get('failures')) == ('1', '1'), root.attrib
+          assert cases[0].find('skipped') is None and cases[0].find('error') is None
+          print('ORIGINAL_REPORTER_JUNIT_RED_CONFIRMED: genuine Surefire 3.5.6 executed case')
+          PY
+      - name: Receive exact corrected reporter and require real candidate GREEN JUnit
+        shell: bash
+        run: |
+          set -euo pipefail
+          original=.m3-surefire356/upstream
+          proof="$RUNNER_TEMP/surefire356-authentic"
+          git -C "$original" apply --check "$GITHUB_WORKSPACE/tests/m3/surefire356-authentic/StatelessXmlReporter.patch"
+          git -C "$original" apply "$GITHUB_WORKSPACE/tests/m3/surefire356-authentic/StatelessXmlReporter.patch"
+          (
+            cd "$original"
+            printf '%s  %s\n' \
+              06235aefe3e27f0c4b5a1d8e1ebff471c4f445d48bb54e487b6c0fd6d004fdfd 'maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java' \
+              7f6583143f9931a3f6bc17c41db703599c03ea21aa974d4bb032e836ee7b10a7 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java' \
+              | sha256sum --check --status
+          )
+          paths="$(git -C "$original" diff --name-only)"
+          expected="$(printf '%s\n%s' 'maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java' 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java')"
+          test "$paths" = "$expected" || { printf 'Refused source path drift: %s\n' "$paths"; exit 1; }
+          git -C "$original" diff --check
+          if ! mvn -B -ntp -f "$original/pom.xml" -pl maven-surefire-common -am \
+            '-Dtest=StatelessXmlReporterTest#testCountsRepeatedMethodNameInvocationsInXml' \
+            -Dsurefire.failIfNoSpecifiedTests=false test \
+            > "$proof/candidate-green-maven.log" 2>&1; then
+            tail -n 100 "$proof/candidate-green-maven.log"
+            echo 'REFUSED: corrected reporter JUnit failed'
+            exit 1
+          fi
+          cp -- "$original/maven-surefire-common/target/surefire-reports/TEST-org.apache.maven.plugin.surefire.report.StatelessXmlReporterTest.xml" \
+            "$proof/candidate-green.xml"
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          p = Path(__import__('os').environ['RUNNER_TEMP'])/'surefire356-authentic/candidate-green.xml'
+          root=ET.parse(p).getroot()
+          cases=list(root.iter('testcase'))
+          assert len(cases)==1 and cases[0].get('name')=='testCountsRepeatedMethodNameInvocationsInXml'
+          assert (root.get('tests'),root.get('errors'),root.get('failures'),root.get('skipped'))==('1','0','0','0'),root.attrib
+          assert all(cases[0].find(k) is None for k in ('failure','error','skipped'))
+          print('CORRECTED_REPORTER_JUNIT_GREEN_CONFIRMED: original Apache Surefire 3.5.6 test reactor')
+          PY
+          (
+            cd "$original"
+            sha256sum 'maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java' 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java'
+            git rev-parse HEAD
+            git diff --stat
+          ) > "$proof/source-and-toolchain.txt"
+          java -version 2>> "$proof/source-and-toolchain.txt"
+          mvn -version >> "$proof/source-and-toolchain.txt"
+          echo 'SUREFIRE_356_AUTHENTIC_RED_GREEN_PASS; GEF_NATIVE_RELEASE_REMAINS_HOLD'
+      - name: Retain executed red/green JUnit XML, original logs and identity proof
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: surefire356-authentic-apache-original-reporter-junit
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/surefire356-authentic/**
