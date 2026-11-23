@@ -168,12 +168,18 @@ jobs:
     timeout-minutes: 120
     env:
       CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
       DRAW2D_SPARSE_NATIVE_REQUIRED: 'true'
       GEF_PROOF_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      PROOF_ROOT: ${{ runner.temp }}/surefire356-tycho-handoff
-      STOCK_M2: ${{ runner.temp }}/surefire356-stock-m2
-      CANDIDATE_M2: ${{ runner.temp }}/surefire356-candidate-m2
     steps:
+      - name: Initialize runner-local proof paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' \
+            "PROOF_ROOT=$RUNNER_TEMP/surefire356-tycho-handoff" \
+            "STOCK_M2=$RUNNER_TEMP/surefire356-stock-m2" \
+            "CANDIDATE_M2=$RUNNER_TEMP/surefire356-candidate-m2" >> "$GITHUB_ENV"
       - name: Check out GEF once at the exact proof head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
