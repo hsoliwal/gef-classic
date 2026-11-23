@@ -1,0 +1,62 @@
+diff --git a/maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java b/maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java
+index 17547db9bcbd964bcf8729eff12b0624f2ddf067..c5ef6fc2a009f8c416eacd949dc4543e865d0525 100644
+--- a/maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java
++++ b/maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java
+@@ -509,8 +509,8 @@
+                     "timestamp", Instant.ofEpochMilli(report.getStartTime()).toString());
+         }
+ 
+-        // Count actual unique test methods and their final results from classMethodStatistics (accumulated across
+-        // reruns)
++        // Match header statistics to the testcase elements serializeTestClass
++        // actually writes. One method key may represent many invocations.
+         int actualTestCount = 0;
+         int errors = 0;
+         int failures = 0;
+@@ -518,12 +518,43 @@
+         int flakes = 0;
+ 
+         for (Map<String, List<WrappedReportEntry>> methodStats : classMethodStatistics.values()) {
+-            actualTestCount += methodStats.size();
+             for (Map.Entry<String, List<WrappedReportEntry>> methodEntry : methodStats.entrySet()) {
+-                String methodName = methodEntry.getKey();
+                 List<WrappedReportEntry> methodRuns = methodEntry.getValue();
++                if (rerunFailingTestsCount <= 0) {
++                    // The no-rerun serializer emits one testcase per report
++                    // entry, including repeated parameterized method keys.
++                    for (WrappedReportEntry run : methodRuns) {
++                        actualTestCount++;
++                        switch (run.getReportEntryType()) {
++                            case ERROR:
++                                errors++;
++                                break;
++                            case FAILURE:
++                                failures++;
++                                break;
++                            case SKIPPED:
++                                skipped++;
++                                break;
++                            case SUCCESS:
++                            default:
++                                break;
++                        }
++                    }
++                    continue;
++                }
++                String methodName = methodEntry.getKey();
+                 TestResultType resultType = getTestResultTypeWithBeforeAllHandling(methodName, methodRuns, methodStats);
+-
++                if (resultType == TestResultType.SUCCESS) {
++                    // With reruns, SUCCESS serializes every successful entry,
++                    // while all other final results serialize one testcase.
++                    for (WrappedReportEntry run : methodRuns) {
++                        if (run.getReportEntryType() == SUCCESS) {
++                            actualTestCount++;
++                        }
++                    }
++                } else {
++                    actualTestCount++;
++                }
+                 switch (resultType) {
+                     case ERROR:
+                         errors++;
