@@ -60,7 +60,7 @@ jobs:
           (
             cd "$original"
             printf '%s  %s\n' \
-              7f6583143f9931a3f6bc17c41db703599c03ea21aa974d4bb032e836ee7b10a7 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java' \
+              df96bf5d72924e0a472f5ea96b404469b90fd66f6f12e51c11edd4236a73a053 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java' \
               | sha256sum --check --status
           )
           test "$(git -C "$original" diff --name-only)" = 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java'
@@ -76,7 +76,7 @@ jobs:
           set +e
           mvn -B -ntp -f "$original/pom.xml" -pl maven-surefire-common -am \
             '-Dtest=StatelessXmlReporterTest#testCountsRepeatedMethodNameInvocationsInXml' \
-            -Dsurefire.failIfNoSpecifiedTests=false test \
+            -Dsurefire.failIfNoSpecifiedTests=false package \
             > "$proof/baseline-red-maven.log" 2>&1
           rc=$?
           set -e
@@ -115,7 +115,7 @@ jobs:
             cd "$original"
             printf '%s  %s\n' \
               06235aefe3e27f0c4b5a1d8e1ebff471c4f445d48bb54e487b6c0fd6d004fdfd 'maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java' \
-              7f6583143f9931a3f6bc17c41db703599c03ea21aa974d4bb032e836ee7b10a7 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java' \
+              df96bf5d72924e0a472f5ea96b404469b90fd66f6f12e51c11edd4236a73a053 'maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java' \
               | sha256sum --check --status
           )
           paths="$(git -C "$original" diff --name-only)"
@@ -124,7 +124,7 @@ jobs:
           git -C "$original" diff --check
           if ! mvn -B -ntp -f "$original/pom.xml" -pl maven-surefire-common -am \
             '-Dtest=StatelessXmlReporterTest#testCountsRepeatedMethodNameInvocationsInXml' \
-            -Dsurefire.failIfNoSpecifiedTests=false test \
+            -Dsurefire.failIfNoSpecifiedTests=false package \
             > "$proof/candidate-green-maven.log" 2>&1; then
             tail -n 100 "$proof/candidate-green-maven.log"
             echo 'REFUSED: corrected reporter JUnit failed'

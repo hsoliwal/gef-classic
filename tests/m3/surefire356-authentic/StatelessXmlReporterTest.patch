@@ -1,8 +1,8 @@
 diff --git a/maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java b/maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java
-index 59f1a9b38d34c5530178ec3f74072509644a0608..fe12f8f3773ad73c43a133022e588f1d93dbc02e 100644
+index 59f1a9b38d34c5530178ec3f74072509644a0608..31bcd15a411282807ba948955d40753f55b43636 100644
 --- a/maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java
 +++ b/maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java
-@@ -584,6 +584,50 @@
+@@ -584,6 +584,48 @@
          reporter.testSetCompleted(testReport, stats);
      }
  
@@ -11,14 +11,12 @@ index 59f1a9b38d34c5530178ec3f74072509644a0608..fe12f8f3773ad73c43a133022e588f1d
 +     * including multiple successful executions with one method name.
 +     */
 +    public void testCountsRepeatedMethodNameInvocationsInXml() throws IOException {
-+        ReportEntry first = new SimpleReportEntry(
-+                NORMAL_RUN, 0L, getClass().getName(), null, TEST_ONE, null, 12);
-+        ReportEntry second = new SimpleReportEntry(
-+                NORMAL_RUN, 0L, getClass().getName(), null, TEST_ONE, null, 13);
-+        WrappedReportEntry firstRun = new WrappedReportEntry(
-+                first, SUCCESS, 1771085631L, 12, null, null, systemProps());
-+        WrappedReportEntry secondRun = new WrappedReportEntry(
-+                second, SUCCESS, 1771085631L, 13, null, null, systemProps());
++        ReportEntry first = new SimpleReportEntry(NORMAL_RUN, 0L, getClass().getName(), null, TEST_ONE, null, 12);
++        ReportEntry second = new SimpleReportEntry(NORMAL_RUN, 0L, getClass().getName(), null, TEST_ONE, null, 13);
++        WrappedReportEntry firstRun =
++                new WrappedReportEntry(first, SUCCESS, 1771085631L, 12, null, null, systemProps());
++        WrappedReportEntry secondRun =
++                new WrappedReportEntry(second, SUCCESS, 1771085631L, 13, null, null, systemProps());
 +        stats.testSucceeded(firstRun);
 +        stats.testSucceeded(secondRun);
 +        StatelessXmlReporter reporter = new StatelessXmlReporter(
