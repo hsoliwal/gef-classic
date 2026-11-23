@@ -45,6 +45,7 @@ import org.junit.platform.suite.api.Suite;
 	NativeSparseDamageSwtTest.class,
 	LayeredPaneTest.class,
 	ConnectionEndPointMoveTest.class,
+	ViewportConnectionClipTest.class,
 	ImageUtilitiesTest.class,
 	LookAheadTest.class,
 	TextualTests.class,
