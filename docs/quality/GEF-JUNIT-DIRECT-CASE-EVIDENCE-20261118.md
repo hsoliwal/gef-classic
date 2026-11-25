@@ -33,3 +33,6 @@ The actual Draw2D suite XML SHA-256 differs per artifact (system properties and 
 4. Re-run the same strict SWT-based verifier on the corrected evidence and compare full Win32/GTK/Cocoa platform receipts. Keep GEF release **HOLD** while the mismatch remains.
 
 This is an evidence/diagnostic record. It does **not** assert that the GEF native or release gates have passed.
+
+## Status update (2026-11-25, appended)
+Step 3 is delivered to the main build by [GEF #47](https://github.com/hsoliwal/gef-classic/pull/47). Every verify job in `.github/workflows/maven.yml` builds its JUnit XML with the Tycho 5.0.4 OSGi booter rebuilt around the corrected Surefire 3.5.6 reporter (the patches in `tests/m3/surefire356-authentic/`). Step 4 runs the same strict verifier, still pinned at `1202ab3`, on those reports. The automatic push and pull_request runs on head `15087a2` are the first main-build runs with this producer, and both passed. The text above is unchanged. Receipts, hashes and local verification are in the paired [Synexia #19303](https://github.com/hsoliwal/com.synexia/pull/19303). Release stays HOLD for the other open gates.
