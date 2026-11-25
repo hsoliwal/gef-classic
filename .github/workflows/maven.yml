@@ -7,8 +7,182 @@ on:
 
 permissions: {}
 
+# The JUnit XML producer for every verify job below is the Tycho 5.0.4 OSGi
+# booter rebuilt around the corrected Apache Surefire 3.5.6 StatelessXmlReporter
+# (the sealed patches in tests/m3/surefire356-authentic). Stock 3.5.6 declares
+# one test per (suite, method name) while writing one <testcase> per execution.
+# The strict SWT verifier pin below stays unchanged; it checks the corrected
+# reports. Evidence: docs/quality/GEF-JUNIT-PRODUCER-DELIVERY-20261125.md
+env:
+  SUREFIRE_SOURCE: 25ea054860a5c1e5932b360d8aa0a31944c2b841
+  TYCHO_SOURCE: c4349ee27dfde2817dfc7121b5f84bfb9eeb0195
+  REPORT_PRODUCER_BOOTER_SHA256: 73c9822161a262d9f8fa3169219f15be316a73b6f9df8ea94210eb22939a42cc
+  REPORT_PRODUCER_POM_SHA256: a1101fdfbdd5d2a6dde3d0a7738e3a7b98164f5b7d8bb091586a6e8d304de312
+  REPORT_PRODUCER_REPORTER_SHA256: cdd12416d7e9a0e18795f95747f28b945b7ee0f542f6f8c1d86f1ab86d97152a
+
 jobs:
+  report-producer:
+    name: Corrected Surefire 3.5.6 reporter in the Tycho 5.0.4 booter
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      CI: 'true'
+    steps:
+    - name: Check out the sealed reporter correction
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        path: gef
+        persist-credentials: false
+    - name: Check out Apache Surefire 3.5.6
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: apache/maven-surefire
+        ref: ${{ env.SUREFIRE_SOURCE }}
+        path: upstream-surefire
+        persist-credentials: false
+    - name: Check out Tycho 5.0.4
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: eclipse-tycho/tycho
+        ref: ${{ env.TYCHO_SOURCE }}
+        path: upstream-tycho
+        persist-credentials: false
+    - name: Set up Java 21 without a shared Maven cache
+      uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+      with:
+        maven-version: 3.9.12
+    - name: Admit the exact upstream sources and apply only the sealed correction
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "PRODUCER_M2=$RUNNER_TEMP/report-producer-m2" >> "$GITHUB_ENV"
+        echo "PRODUCER_OUT=$RUNNER_TEMP/report-producer" >> "$GITHUB_ENV"
+        mkdir -p "$RUNNER_TEMP/report-producer"
+        test "$(git -C upstream-surefire rev-parse HEAD)" = "$SUREFIRE_SOURCE"
+        test "$(git -C upstream-tycho rev-parse HEAD)" = "$TYCHO_SOURCE"
+        for tree in upstream-surefire upstream-tycho; do
+          test -z "$(git -C "$tree" status --porcelain=v1 --untracked-files=all)"
+        done
+        patches="$GITHUB_WORKSPACE/gef/tests/m3/surefire356-authentic"
+        test "$(git hash-object "$patches/StatelessXmlReporterTest.patch")" = 5b23ef250a33a4d346d0f4e4cf8e42bb7f92a814
+        test "$(git hash-object "$patches/StatelessXmlReporter.patch")" = 96ba1e191f602e44cd8281f6baa74c909615b2cd
+        reporter=maven-surefire-common/src/main/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java
+        regression=maven-surefire-common/src/test/java/org/apache/maven/plugin/surefire/report/StatelessXmlReporterTest.java
+        cd upstream-surefire
+        printf '%s  %s\n' \
+          42b24e48035ed5e5e6dea2d960b38ef6a92faee6c1caf8234fdc74cc79fa57f8 "$reporter" \
+          83b5c60d098b7f5c29a607e7049742dac4930b6a9c640e38f32d844b66cc6088 "$regression" \
+          | sha256sum --check --status
+        for patch in StatelessXmlReporterTest.patch StatelessXmlReporter.patch; do
+          git apply --check "$patches/$patch"
+          git apply "$patches/$patch"
+        done
+        printf '%s  %s\n' \
+          06235aefe3e27f0c4b5a1d8e1ebff471c4f445d48bb54e487b6c0fd6d004fdfd "$reporter" \
+          df96bf5d72924e0a472f5ea96b404469b90fd66f6f12e51c11edd4236a73a053 "$regression" \
+          | sha256sum --check --status
+        test "$(git diff --name-only)" = "$(printf '%s\n%s' "$reporter" "$regression")"
+        git diff --check
+    - name: Build the corrected reporter and run its complete JUnit class
+      shell: bash
+      run: |
+        set -euo pipefail
+        if ! mvn -B -ntp -f upstream-surefire/pom.xml -Dmaven.repo.local="$PRODUCER_M2" \
+            -pl maven-surefire-common -am '-Dtest=StatelessXmlReporterTest' \
+            -Dsurefire.failIfNoSpecifiedTests=false package > "$PRODUCER_OUT/surefire-package.log" 2>&1; then
+          tail -n 120 "$PRODUCER_OUT/surefire-package.log"
+          exit 1
+        fi
+        cp upstream-surefire/maven-surefire-common/target/surefire-reports/TEST-org.apache.maven.plugin.surefire.report.StatelessXmlReporterTest.xml \
+          "$PRODUCER_OUT/reporter-junit.xml"
+        python3 - <<'PY'
+        import gzip, hashlib, os
+        import xml.etree.ElementTree as ET
+        from pathlib import Path
+        report = Path(os.environ['PRODUCER_OUT'], 'reporter-junit.xml')
+        data = report.read_bytes()
+        root = ET.fromstring(data)
+        cases = list(root.iter('testcase'))
+        declared = tuple(root.get(k) for k in ('tests', 'errors', 'failures', 'skipped'))
+        assert declared == ('12', '0', '0', '0'), root.attrib
+        assert len(cases) == 12, len(cases)
+        assert sum(c.get('name') == 'testCountsRepeatedMethodNameInvocationsInXml' for c in cases) == 1
+        assert all(c.find(k) is None for c in cases for k in ('error', 'failure', 'skipped'))
+        # Keep the raw bytes, compressed, so the unit-test publisher (artifacts/**/*.xml)
+        # does not count Surefire's own tests as GEF tests.
+        report.with_suffix('.xml.gz').write_bytes(gzip.compress(data, mtime=0))
+        report.unlink()
+        print('Corrected reporter: 12 of 12 StatelessXmlReporterTest cases passed, including the regression;'
+              ' raw XML SHA-256 ' + hashlib.sha256(data).hexdigest())
+        PY
+        mvn -B -ntp -N -f upstream-surefire/pom.xml -Dmaven.repo.local="$PRODUCER_M2" \
+          org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
+          -Dfile="$PWD/upstream-surefire/maven-surefire-common/target/maven-surefire-common-3.5.6.jar" \
+          -DpomFile="$PWD/upstream-surefire/maven-surefire-common/pom.xml" -DgeneratePom=false \
+          > "$PRODUCER_OUT/common-install.log" 2>&1
+    - name: Rebuild the unchanged Tycho booter around the corrected reporter
+      shell: bash
+      run: |
+        set -euo pipefail
+        if ! mvn -B -ntp -f upstream-tycho/tycho-surefire/org.eclipse.tycho.surefire.osgibooter/pom.xml \
+            -Dmaven.repo.local="$PRODUCER_M2" clean install > "$PRODUCER_OUT/tycho-booter-build.log" 2>&1; then
+          tail -n 120 "$PRODUCER_OUT/tycho-booter-build.log"
+          exit 1
+        fi
+        test -z "$(git -C upstream-tycho status --porcelain=v1 --untracked-files=all)"
+        python3 - <<'PY'
+        import gzip, hashlib, json, os, shutil, zipfile
+        from pathlib import Path
+        out, repo = Path(os.environ['PRODUCER_OUT']), Path(os.environ['PRODUCER_M2'])
+        cls = 'org/apache/maven/plugin/surefire/report/StatelessXmlReporter.class'
+        def identity(path):
+            with zipfile.ZipFile(path) as jar:
+                reporter = hashlib.sha256(jar.read(cls)).hexdigest()
+            return {'jar_sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'reporter_sha256': reporter}
+        common = identity(repo / 'org/apache/maven/surefire/maven-surefire-common/3.5.6/maven-surefire-common-3.5.6.jar')
+        module = Path('upstream-tycho/tycho-surefire/org.eclipse.tycho.surefire.osgibooter')
+        built = module / 'target/org.eclipse.tycho.surefire.osgibooter-5.0.4.jar'
+        booter = identity(built)
+        installed = repo / 'org/eclipse/tycho/org.eclipse.tycho.surefire.osgibooter/5.0.4/org.eclipse.tycho.surefire.osgibooter-5.0.4.jar'
+        pom = hashlib.sha256((module / 'pom.xml').read_bytes()).hexdigest()
+        expected_reporter = os.environ['REPORT_PRODUCER_REPORTER_SHA256']
+        if common['reporter_sha256'] != expected_reporter or booter['reporter_sha256'] != expected_reporter:
+            raise SystemExit(f'Reporter bytes differ from the qualified producer: {common} {booter}')
+        if booter['jar_sha256'] != os.environ['REPORT_PRODUCER_BOOTER_SHA256']:
+            raise SystemExit(f'Booter bytes differ from the qualified producer (re-qualify before use): {booter}')
+        if hashlib.sha256(installed.read_bytes()).hexdigest() != booter['jar_sha256']:
+            raise SystemExit('Installed booter differs from the built booter')
+        if pom != os.environ['REPORT_PRODUCER_POM_SHA256']:
+            raise SystemExit('Unexpected booter POM ' + pom)
+        shutil.copyfile(built, out / built.name)
+        shutil.copyfile(module / 'pom.xml', out / 'org.eclipse.tycho.surefire.osgibooter-5.0.4.pom')
+        junit = hashlib.sha256(gzip.decompress((out / 'reporter-junit.xml.gz').read_bytes())).hexdigest()
+        record = {'surefire_source': os.environ['SUREFIRE_SOURCE'], 'tycho_source': os.environ['TYCHO_SOURCE'],
+                  'common': common, 'booter': booter, 'booter_pom_sha256': pom, 'reporter_junit_xml_sha256': junit}
+        (out / 'producer.json').write_text(json.dumps(record, indent=2) + '\n')
+        print(json.dumps(record, indent=2))
+        PY
+        {
+          java -version 2>&1
+          mvn -version
+        } > "$PRODUCER_OUT/toolchain.txt"
+    - name: Upload the qualified report producer
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: report-producer-surefire356-tycho504
+        if-no-files-found: error
+        path: ${{ runner.temp }}/report-producer/
+
   build:
+    needs: report-producer
     permissions:
       contents: read
     strategy:
@@ -57,6 +231,36 @@ jobs:
       uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
       with:
         maven-version: 3.9.12
+    - name: Download the qualified report producer
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: report-producer-surefire356-tycho504
+        path: ${{ runner.temp }}/report-producer
+    - name: Install the qualified report producer for this build
+      shell: bash
+      working-directory: ${{ runner.temp }}/report-producer
+      run: |
+        set -euo pipefail
+        python - <<'PY'
+        import hashlib, os
+        from pathlib import Path
+        for name, key in (('org.eclipse.tycho.surefire.osgibooter-5.0.4.jar', 'REPORT_PRODUCER_BOOTER_SHA256'),
+                          ('org.eclipse.tycho.surefire.osgibooter-5.0.4.pom', 'REPORT_PRODUCER_POM_SHA256')):
+            actual = hashlib.sha256(Path(name).read_bytes()).hexdigest()
+            if actual != os.environ[key]:
+                raise SystemExit(f'Refused report producer {name}: {actual}')
+        PY
+        mvn -B -ntp org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
+          -Dfile=org.eclipse.tycho.surefire.osgibooter-5.0.4.jar \
+          -DpomFile=org.eclipse.tycho.surefire.osgibooter-5.0.4.pom
+        python - <<'PY'
+        import hashlib, os
+        from pathlib import Path
+        jar = Path.home() / '.m2/repository/org/eclipse/tycho/org.eclipse.tycho.surefire.osgibooter/5.0.4/org.eclipse.tycho.surefire.osgibooter-5.0.4.jar'
+        if hashlib.sha256(jar.read_bytes()).hexdigest() != os.environ['REPORT_PRODUCER_BOOTER_SHA256']:
+            raise SystemExit('Installed report producer differs: ' + str(jar))
+        print('Installed qualified report producer ' + str(jar))
+        PY
     - name: Build with Maven
       uses: coactions/setup-xvfb@b6b4fcfb9f5a895edadc3bc76318fae0ac17c8b3 # v1.0.1
       with:
@@ -84,6 +288,38 @@ jobs:
                 raise SystemExit('Failed tests: ' + name)
             print(json.dumps({'bundle': name, **counts}))
         PY
+    - name: Require that every test runtime used the qualified report producer
+      shell: bash
+      run: |
+        python - <<'PY'
+        import hashlib, os, re, zipfile
+        from pathlib import Path
+        local = Path.home() / '.m2/repository/org/eclipse/tycho/org.eclipse.tycho.surefire.osgibooter/5.0.4/org.eclipse.tycho.surefire.osgibooter-5.0.4.jar'
+        cls = 'org/apache/maven/plugin/surefire/report/StatelessXmlReporter.class'
+        booter, reporter = os.environ['REPORT_PRODUCER_BOOTER_SHA256'], os.environ['REPORT_PRODUCER_REPORTER_SHA256']
+        if hashlib.sha256(local.read_bytes()).hexdigest() != booter:
+            raise SystemExit('Local report producer changed during the build: ' + str(local))
+        prefix, marker = 'reference:file:', '/org.eclipse.tycho.surefire.osgibooter/5.0.4/'
+        for name in ('org.eclipse.draw2d.tests', 'org.eclipse.gef.tests', 'org.eclipse.zest.tests'):
+            inis = [p for p in Path(name, 'target/work').rglob('config.ini') if p.parent.name == 'configuration']
+            if len(inis) != 1:
+                raise SystemExit(f'Expected one OSGi test runtime configuration for {name}: {inis}')
+            # Tycho writes osgi.bundles with java.util.Properties escapes (reference\:file\:...).
+            lines = re.sub(r'\\(.)', r'\1', inis[0].read_text(encoding='iso-8859-1')).splitlines()
+            values = [line.split('=', 1)[1] for line in lines if line.startswith('osgi.bundles=')]
+            if len(values) != 1:
+                raise SystemExit(f'Expected one osgi.bundles entry in {inis[0]}')
+            locations = (item.split('@', 1)[0] for item in values[0].split(','))
+            used = {Path(loc[len(prefix):]).resolve() for loc in locations if loc.startswith(prefix) and marker in loc}
+            if len(used) != 1:
+                raise SystemExit(f'Expected one Tycho booter in {inis[0]}: {sorted(map(str, used))}')
+            path = used.pop()
+            with zipfile.ZipFile(path) as jar:
+                embedded = hashlib.sha256(jar.read(cls)).hexdigest()
+            if hashlib.sha256(path.read_bytes()).hexdigest() != booter or embedded != reporter:
+                raise SystemExit(f'{name} test runtime did not use the qualified report producer: {path}')
+            print(f'{name}: OSGi test runtime booter {path} is the qualified report producer')
+        PY
     - name: Record the verified source and toolchain
       if: always()
       shell: bash
@@ -95,6 +331,10 @@ jobs:
           mvn -version
           git -C "$RUNNER_TEMP/swt-release-tools" rev-parse HEAD
           python -c 'import hashlib, os; from pathlib import Path; p = Path(os.environ["RUNNER_TEMP"]) / "swt-release-tools/tools/release/readiness.py"; print("REPORT_PARSER_SHA256=" + hashlib.sha256(p.read_bytes()).hexdigest())'
+          echo "REPORT_PRODUCER_SUREFIRE_SOURCE=$SUREFIRE_SOURCE"
+          echo "REPORT_PRODUCER_TYCHO_SOURCE=$TYCHO_SOURCE"
+          echo "REPORT_PRODUCER_BOOTER_SHA256=$REPORT_PRODUCER_BOOTER_SHA256"
+          echo "REPORT_PRODUCER_REPORTER_SHA256=$REPORT_PRODUCER_REPORTER_SHA256"
         } > "$RUNNER_TEMP/gef-source.txt"
     - name: Upload Source and Toolchain
       if: always()
@@ -111,6 +351,11 @@ jobs:
         if-no-files-found: error
         path: |
           ${{ github.workspace }}/**/target/surefire-reports/*.xml
+    - name: Keep the qualified report producer out of the shared Maven cache
+      if: always()
+      shell: bash
+      run: |
+        python -c 'import shutil; from pathlib import Path; shutil.rmtree(Path.home() / ".m2/repository/org/eclipse/tycho/org.eclipse.tycho.surefire.osgibooter/5.0.4", ignore_errors=True)'
 
   native-sparse-redraw:
     name: Native SWT sparse redraw — Java21 ${{ matrix.os }}
