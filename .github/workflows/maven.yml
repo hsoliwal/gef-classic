@@ -12,7 +12,8 @@ permissions: {}
 # (the sealed patches in tests/m3/surefire356-authentic). Stock 3.5.6 declares
 # one test per (suite, method name) while writing one <testcase> per execution.
 # The strict SWT verifier pin below stays unchanged; it checks the corrected
-# reports. Evidence: docs/quality/GEF-JUNIT-PRODUCER-DELIVERY-20261125.md
+# reports. Status: docs/quality/GEF-JUNIT-DIRECT-CASE-EVIDENCE-20261118.md
+# (2026-11-25 update); proof: https://github.com/hsoliwal/com.synexia/pull/19303
 env:
   SUREFIRE_SOURCE: 25ea054860a5c1e5932b360d8aa0a31944c2b841
   TYCHO_SOURCE: c4349ee27dfde2817dfc7121b5f84bfb9eeb0195
